@@ -84,7 +84,7 @@ func (d *Diagnose) getServicesHealthChecks(w http.ResponseWriter, r *http.Reques
 			for _, addr := range subset.Addresses {
 				for _, port := range subset.Ports {
 					theURL := fmt.Sprintf("http://%s:%d/healthz", addr.IP, port.Port)
-					putLine(w, "<pre>Querying %s\n", svc.Name, theURL)
+					putLine(w, "<pre>Querying %s\n", theURL)
 					// Query the health endpoint
 					resp, err := http.Get(theURL)
 					if err != nil {

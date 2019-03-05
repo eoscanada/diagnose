@@ -21,14 +21,22 @@ func main() {
 
 	d.setupRoutes()
 
+	zlog.Info("setting up stores")
+	if err := d.setupStores(*flagBlocksStore, *flagSearchIndexesStore); err != nil {
+		zlog.Fatal("failed setting up store", zap.Error(err))
+	}
+
+	zlog.Info("setting up k8s clientset")
 	if err := d.setupK8s(); err != nil {
 		zlog.Fatal("failed setting up k8s", zap.Error(err))
 	}
 
+	zlog.Info("setting up eosdb")
 	if err := d.setupEOSDB(*flagEOSDB); err != nil {
 		zlog.Fatal("failed bigtable setup", zap.Error(err))
 	}
 
+	zlog.Info("serving http")
 	if err := d.Serve(); err != nil {
 		zlog.Error("failed listening", zap.Error(err))
 	}

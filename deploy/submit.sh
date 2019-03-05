@@ -1,4 +1,3 @@
-
 #!/bin/bash -e
 
 CURDIR="$(dirname $0)"
@@ -17,4 +16,3 @@ pushd ${CURDIR} >/dev/null
         ..
 popd >/dev/null
 echo "TAG_DEST: ${TAG_DEST}"
-

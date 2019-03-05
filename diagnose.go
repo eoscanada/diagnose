@@ -5,11 +5,12 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/eoscanada/bstream/store"
 	"github.com/eoscanada/eosdb"
 	"github.com/gorilla/mux"
+	"go.uber.org/zap"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 type Diagnose struct {
@@ -19,23 +20,10 @@ type Diagnose struct {
 	namespace string
 	eosdb     eosdb.DBReader
 
+	blocksStore store.ArchiveStore
+	searchStore *store.SimpleGStore
+
 	cluster *kubernetes.Clientset
-}
-
-func (d *Diagnose) setupK8s() error {
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		return err
-	}
-
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return err
-	}
-
-	d.cluster = clientset
-
-	return nil
 }
 
 func (d *Diagnose) setupRoutes() {
@@ -52,10 +40,7 @@ func (d *Diagnose) setupRoutes() {
 func (d *Diagnose) verifyEOSDBHoles(w http.ResponseWriter, r *http.Request) {
 	// TODO: receive parameters to limit search..
 
-	flush := w.(http.Flusher)
-
-	fmt.Fprintf(w, "<html><head><title>Checking holes in EOSDB</title></head><h1>Checking holes in EOSDB</h1>")
-	flush.Flush()
+	putLine(w, "<html><head><title>Checking holes in EOSDB</title></head><h1>Checking holes in EOSDB</h1>")
 
 	// TODO: navigate all of Bigtable blocks, and make sure there
 	// are no holes, otherwise print in the logs that there are
@@ -111,6 +96,7 @@ func (d *Diagnose) index(w http.ResponseWriter, r *http.Request) {
 }
 
 func (d *Diagnose) Serve() error {
+	zlog.Info("Serving on address", zap.String("addr", d.addr))
 	return http.ListenAndServe(d.addr, d.routes)
 }
 

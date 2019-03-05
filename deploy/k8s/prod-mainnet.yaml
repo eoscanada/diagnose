@@ -17,13 +17,14 @@ spec:
     spec:
       containers:
       - name: diagnose
-        image: gcr.io/eoscanada-shared-services/diagnose:262b82f
+        image: gcr.io/eoscanada-shared-services/diagnose:08e003c
         command:
         - /app/diagnose
         args:
-        - --eosdb=eoscanada-public:bigtable-instance:
+        - --eosdb-connection=eoscanada-public:bigtable-instance:5fff-v6
         - --blocks-store=gs://eoscanada-public-nodeos-archive/nodeos-mainnet-v8
         - --search-indexes-store=gs://eoscanada-public-indices-archive/search-aca3-v7
+        - --namespace=default
         imagePullPolicy: Always
         ports:
         - containerPort: 8080

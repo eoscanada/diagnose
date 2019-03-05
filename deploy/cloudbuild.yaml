@@ -75,6 +75,7 @@ steps:
     cd /workspace
     go test -v ./...
     go build -v -o /root/artifacts/$_APP .
+    cp *html /root/artifacts
   volumes:
   - name: 'ssh'
     path: /root/.ssh

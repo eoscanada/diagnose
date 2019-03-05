@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: diagnose
-        image: gcr.io/eoscanada-shared-services/diagnose:08e003c
+        image: gcr.io/eoscanada-shared-services/diagnose:0c7797d
         command:
         - /app/diagnose
         args:

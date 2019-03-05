@@ -1,0 +1,10 @@
+*.test
+*.db
+*.json.gz
+*~
+*.orig
+*.rej
+vendor
+
+.envrc
+.idea

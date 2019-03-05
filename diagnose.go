@@ -16,9 +16,8 @@ type Diagnose struct {
 	addr   string
 	routes *mux.Router
 
-	healthServices []string
-	namespace      string
-	eosdb          eosdb.DBReader
+	namespace string
+	eosdb     eosdb.DBReader
 
 	cluster *kubernetes.Clientset
 }
@@ -64,25 +63,28 @@ func (d *Diagnose) verifyEOSDBHoles(w http.ResponseWriter, r *http.Request) {
 }
 
 func (d *Diagnose) getServicesHealthChecks(w http.ResponseWriter, r *http.Request) {
-	// TODO: call the health check on all listed services' endpoints
-	// use `d.cluster` to get the Services, get the corresponding `Endpoints`.
-	// Depending on the name, poke a certain endpoint and pack the result, and return
-	// to the user.
-
 	putLine(w, "<html><head><title>Services health checks</title></head><h1>All services health checks</h1>")
 
-	for _, serviceName := range d.healthServices {
-		endpoints, err := d.cluster.CoreV1().Endpoints(d.namespace).Get(serviceName, meta_v1.GetOptions{})
+	services, err := d.cluster.CoreV1().Services(d.namespace).List(meta_v1.ListOptions{})
+	if err != nil {
+		putLine(w, "<pre>Failed listing services: %s</pre>", err)
+		return
+	}
+
+	for _, svc := range services.Items {
+		endpoints, err := d.cluster.CoreV1().Endpoints(d.namespace).Get(svc.Name, meta_v1.GetOptions{})
 		if err != nil {
-			putLine(w, "<pre>failed getting service %q: %s</pre>", serviceName, err)
+			putLine(w, "<pre>failed getting service %q: %s</pre>", svc.Name, err)
 			continue
 		}
+
+		putLine(w, "<h4>Service: %q</h4>", svc.Name)
 
 		for _, subset := range endpoints.Subsets {
 			for _, addr := range subset.Addresses {
 				for _, port := range subset.Ports {
 					theURL := fmt.Sprintf("http://%s:%d/healthz", addr.IP, port.Port)
-					putLine(w, "<pre>Service %q. Querying %s\n", serviceName, theURL)
+					putLine(w, "<pre>Querying %s\n", svc.Name, theURL)
 					// Query the health endpoint
 					resp, err := http.Get(theURL)
 					if err != nil {
@@ -100,12 +102,6 @@ func (d *Diagnose) getServicesHealthChecks(w http.ResponseWriter, r *http.Reques
 	}
 }
 
-func putLine(w http.ResponseWriter, format string, v ...interface{}) {
-	flush := w.(http.Flusher)
-	fmt.Fprintf(w, format, v...)
-	flush.Flush()
-}
-
 func (d *Diagnose) index(w http.ResponseWriter, r *http.Request) {
 	// TODO: fetch in-cluster schtuff..
 
@@ -116,4 +112,10 @@ func (d *Diagnose) index(w http.ResponseWriter, r *http.Request) {
 
 func (d *Diagnose) Serve() error {
 	return http.ListenAndServe(d.addr, d.routes)
+}
+
+func putLine(w http.ResponseWriter, format string, v ...interface{}) {
+	flush := w.(http.Flusher)
+	fmt.Fprintf(w, format, v...)
+	flush.Flush()
 }

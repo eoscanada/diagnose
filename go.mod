@@ -11,8 +11,9 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
+	github.com/spf13/pflag v1.0.3 // indirect
 	go.uber.org/zap v1.9.1
-	k8s.io/api v0.0.0-20190222213804-5cb15d344471
+	k8s.io/api v0.0.0-20190222213804-5cb15d344471 // indirect
 	k8s.io/apimachinery v0.0.0-20190221213512-86fb29eff628
 	k8s.io/client-go v10.0.0+incompatible
 	k8s.io/klog v0.2.0 // indirect

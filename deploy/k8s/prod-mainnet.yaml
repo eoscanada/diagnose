@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: diagnose
+  name: diagnose
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: diagnose
+  serviceName: diagnose
+  template:
+    metadata:
+      labels:
+        app: diagnose
+    spec:
+      containers:
+      - name: diagnose
+        image: gcr.io/eoscanada-shared-services/diagnose:262b82f
+        command:
+        - /app/diagnose
+        args:
+        - --eosdb=eoscanada-public:bigtable-instance:
+        - --blocks-store=gs://eoscanada-public-nodeos-archive/nodeos-mainnet-v8
+        - --search-indexes-store=gs://eoscanada-public-indices-archive/search-aca3-v7
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+      restartPolicy: Always

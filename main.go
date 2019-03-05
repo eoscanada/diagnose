@@ -2,22 +2,21 @@ package main
 
 import (
 	"flag"
-	"strings"
 
 	"go.uber.org/zap"
 )
 
-var flagHealthCheckServices = flag.String("health-check-services", "relayer-v9", "Comma-separated list of services for which endpoints we want to check health-checks")
 var flagNamespace = flag.String("namespace", "default", "k8s namespace inspected by this diagnose instance")
 var flagEOSDB = flag.String("eosdb-connection", "", "eosdb connection string as 'project:instance:table-prefix'")
+var flagBlocksStore = flag.String("blocks-store", "gs://eoscanada-public-nodeos-archive/nodeos-mainnet-v9", "Blocks logs storage location")
+var flagSearchIndexesStore = flag.String("search-indexes-store", "gs://eoscanada-public-indices-archive/search-aca3-v7", "GS location of search indexes storage")
 
 func main() {
 	flag.Parse()
 
 	d := Diagnose{
-		addr:           ":8080",
-		healthServices: strings.Split(*flagHealthCheckServices, ","),
-		namespace:      *flagNamespace,
+		addr:      ":8080",
+		namespace: *flagNamespace,
 	}
 
 	d.setupRoutes()

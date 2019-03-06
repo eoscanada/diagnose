@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"os"
 
 	"go.uber.org/zap"
 )
@@ -23,17 +24,20 @@ func main() {
 
 	zlog.Info("setting up stores")
 	if err := d.setupStores(*flagBlocksStore, *flagSearchIndexesStore); err != nil {
-		zlog.Fatal("failed setting up store", zap.Error(err))
+		zlog.Error("failed setting up store", zap.Error(err))
+		os.Exit(1)
 	}
 
 	zlog.Info("setting up k8s clientset")
 	if err := d.setupK8s(); err != nil {
-		zlog.Fatal("failed setting up k8s", zap.Error(err))
+		zlog.Error("failed setting up k8s", zap.Error(err))
+		os.Exit(1)
 	}
 
 	zlog.Info("setting up eosdb")
 	if err := d.setupEOSDB(*flagEOSDB); err != nil {
-		zlog.Fatal("failed bigtable setup", zap.Error(err))
+		zlog.Error("failed bigtable setup", zap.Error(err))
+		os.Exit(1)
 	}
 
 	zlog.Info("serving http")

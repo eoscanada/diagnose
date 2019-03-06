@@ -18,7 +18,7 @@ steps:
   args:
     - '-c'
     - |
-      if gsutil -q stat gs://${PROJECT_ID}_cloudbuild/gomod-cache.tar.gz; then
+      if gsutil -q stat gs://${PROJECT_ID}_cloudbuild/gomod-cache-$_APP.tar.gz; then
         echo "Fetching gomod cache"
         gsutil cp gs://${PROJECT_ID}_cloudbuild/gomod-cache.tar.gz ./
         tar -xpzf gomod-cache.tar.gz -C /builder/home/go/pkg/mod/cache
@@ -87,17 +87,17 @@ steps:
     path: /root/artifacts
 
 # Upload updated `go mod` cache file
-#- name: 'gcr.io/cloud-builders/gsutil'
-#  entrypoint: 'sh'
-#  args:
-#    - '-c'
-#    - |
-#      cd /builder/home/go/pkg/mod/cache
-#      tar czf gomod-cache.tar.gz download
-#      gsutil cp gomod-cache.tar.gz gs://${PROJECT_ID}_cloudbuild/gomod-cache.tar.gz
-#  volumes:
-#  - name: 'gocache'
-#    path: /builder/home/go/pkg/mod/cache
+- name: 'gcr.io/cloud-builders/gsutil'
+  entrypoint: 'sh'
+  args:
+    - '-c'
+    - |
+      cd /builder/home/go/pkg/mod/cache
+      tar czf gomod-cache.tar.gz download
+      gsutil cp gomod-cache.tar.gz gs://${PROJECT_ID}_cloudbuild/gomod-cache-$_APP.tar.gz
+  volumes:
+  - name: 'gocache'
+    path: /builder/home/go/pkg/mod/cache
 
 # Build Docker
 - id: docker-build

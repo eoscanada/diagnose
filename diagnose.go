@@ -59,17 +59,19 @@ func (d *Diagnose) verifyBlocksHoles(w http.ResponseWriter, r *http.Request) {
 
 	putLine(w, "<html><head><title>Checking holes in Block logs</title></head><h1>Checking holes in Block logs</h1>")
 
-	number := regexp.MustCompile(`(\d+)\.jsonl.gz`)
+	number := regexp.MustCompile(`(\d{10})`)
 
 	var holeFound bool
 	var expected uint32
 	var count int
 	err := d.blocksStore.Walk("", func(filename string) error {
+		fmt.Println("MAMA", filename)
 		match := number.FindStringSubmatch(filename)
 		if match == nil {
 			return nil
 		}
 
+		fmt.Println("MATCH", match)
 		count++
 		baseNum, _ := strconv.ParseUint(match[1], 10, 32)
 		baseNum32 := uint32(baseNum)

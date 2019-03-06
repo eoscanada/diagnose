@@ -47,7 +47,16 @@ func (d *Diagnose) verifyEOSDBHoles(w http.ResponseWriter, r *http.Request) {
 	putLine(w, "<p>TODO</p>")
 }
 
+var doingBlocksHoles bool
+
 func (d *Diagnose) verifyBlocksHoles(w http.ResponseWriter, r *http.Request) {
+	if doingBlocksHoles {
+		putLine(w, "<h1>Already running, try later</h1>")
+		return
+	}
+	doingBlocksHoles = true
+	defer func() { doingBlocksHoles = false }()
+
 	putLine(w, "<html><head><title>Checking holes in Block logs</title></head><h1>Checking holes in Block logs</h1>")
 
 	number := regexp.MustCompile(`.*/(\d+)\.jsonl.gz`)
@@ -70,7 +79,7 @@ func (d *Diagnose) verifyBlocksHoles(w http.ResponseWriter, r *http.Request) {
 		}
 		expected = baseNum32 + 100
 
-		if count % 10000 == 0 {
+		if count%10000 == 0 {
 			putLine(w, "<p>%s...</p>\n", filename)
 		}
 

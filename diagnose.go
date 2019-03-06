@@ -54,12 +54,14 @@ func (d *Diagnose) verifyBlocksHoles(w http.ResponseWriter, r *http.Request) {
 
 	var holeFound bool
 	var expected uint32
+	var count int
 	err := d.blocksStore.Walk("", func(filename string) error {
 		match := number.FindStringSubmatch(filename)
 		if match == nil {
 			return nil
 		}
 
+		count++
 		baseNum, _ := strconv.ParseUint(match[1], 10, 32)
 		baseNum32 := uint32(baseNum)
 		if baseNum32 != expected {
@@ -68,18 +70,22 @@ func (d *Diagnose) verifyBlocksHoles(w http.ResponseWriter, r *http.Request) {
 		}
 		expected = baseNum32 + 100
 
+		if count % 10000 == 0 {
+			putLine(w, "<p>%s...</p>\n", filename)
+		}
+
 		return nil
 	})
 	if err != nil {
-		putLine(w, "<pre>Failed walking file list: %s</pre>", err)
+		putLine(w, "<pre>Failed walking file list: %s</pre>\n", err)
 		return
 	}
 
 	if !holeFound {
-		putLine(w, "<p><strong>NO HOLE FOUND!</strong></p>")
+		putLine(w, "<p><strong>NO HOLE FOUND!</strong></p>\n")
 	}
 
-	putLine(w, "<p>Validated up to block log: %d</p>", expected-100)
+	putLine(w, "<p>Validated up to block log: %d</p>\n", expected-100)
 }
 
 func (d *Diagnose) verifySearchHoles(w http.ResponseWriter, r *http.Request) {

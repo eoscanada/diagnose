@@ -1,7 +1,7 @@
 module github.com/eoscanada/diagnose
 
 require (
-	github.com/eoscanada/bstream v1.3.0
+	github.com/eoscanada/bstream v1.3.6
 	github.com/eoscanada/derr v0.3.1
 	github.com/eoscanada/eosdb v0.0.5
 	github.com/eoscanada/logging v0.1.0

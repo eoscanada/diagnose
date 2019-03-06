@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -86,12 +87,18 @@ func (d *Diagnose) verifySearchHoles(w http.ResponseWriter, r *http.Request) {
 
 	number := regexp.MustCompile(`.*/(\d+)\.bleve\.tar\.gz`)
 
+	fileList, err := d.searchStore.ListFiles("shards-5000/", math.MaxUint32)
+	if err != nil {
+		putLine(w, "<pre>Failed walking file list: %s</pre>", err)
+		return
+	}
+
 	var holeFound bool
 	var expected uint32
-	err := d.blocksStore.Walk("shards-5000/", func(filename string) error {
+	for _, filename := range fileList {
 		match := number.FindStringSubmatch(filename)
 		if match == nil {
-			return nil
+			continue
 		}
 
 		baseNum, _ := strconv.ParseUint(match[1], 10, 32)
@@ -101,12 +108,6 @@ func (d *Diagnose) verifySearchHoles(w http.ResponseWriter, r *http.Request) {
 			putLine(w, "<p><strong>HOLE FOUND: %d - %d</strong></p>\n", expected, baseNum)
 		}
 		expected = baseNum32 + 5000
-
-		return nil
-	})
-	if err != nil {
-		putLine(w, "<pre>Failed walking file list: %s</pre>", err)
-		return
 	}
 
 	if !holeFound {

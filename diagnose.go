@@ -59,7 +59,7 @@ func (d *Diagnose) verifyBlocksHoles(w http.ResponseWriter, r *http.Request) {
 
 	putLine(w, "<html><head><title>Checking holes in Block logs</title></head><h1>Checking holes in Block logs</h1>")
 
-	number := regexp.MustCompile(`.*/(\d+)\.jsonl.gz`)
+	number := regexp.MustCompile(`(\d+)\.jsonl.gz`)
 
 	var holeFound bool
 	var expected uint32

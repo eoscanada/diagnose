@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"regexp"
+	"strconv"
 
 	"github.com/eoscanada/bstream/store"
 	"github.com/eoscanada/eosdb"
@@ -30,6 +32,8 @@ func (d *Diagnose) setupRoutes() {
 	r := mux.NewRouter()
 	r.Path("/").Methods("GET").HandlerFunc(d.index)
 	r.Path("/v1/diagnose/verify_eosdb_holes").Methods("GET").HandlerFunc(d.verifyEOSDBHoles)
+	r.Path("/v1/diagnose/verify_blocks_holes").Methods("GET").HandlerFunc(d.verifyBlocksHoles)
+	r.Path("/v1/diagnose/verify_search_holes").Methods("GET").HandlerFunc(d.verifySearchHoles)
 	r.Path("/v1/diagnose/services_health_checks").Methods("GET").HandlerFunc(d.getServicesHealthChecks)
 	r.Path("/v1/diagnose/").Methods("POST").Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	}))
@@ -38,13 +42,78 @@ func (d *Diagnose) setupRoutes() {
 }
 
 func (d *Diagnose) verifyEOSDBHoles(w http.ResponseWriter, r *http.Request) {
-	// TODO: receive parameters to limit search..
-
 	putLine(w, "<html><head><title>Checking holes in EOSDB</title></head><h1>Checking holes in EOSDB</h1>")
+	putLine(w, "<p>TODO</p>")
+}
 
-	// TODO: navigate all of Bigtable blocks, and make sure there
-	// are no holes, otherwise print in the logs that there are
-	// some yucky schtuff.
+func (d *Diagnose) verifyBlocksHoles(w http.ResponseWriter, r *http.Request) {
+	putLine(w, "<html><head><title>Checking holes in Block logs</title></head><h1>Checking holes in Block logs</h1>")
+
+	number := regexp.MustCompile(`.*/(\d+)\.jsonl.gz`)
+
+	var holeFound bool
+	var expected uint32
+	err := d.blocksStore.Walk("", func(filename string) error {
+		match := number.FindStringSubmatch(filename)
+		if match == nil {
+			return nil
+		}
+
+		baseNum, _ := strconv.ParseUint(match[1], 10, 32)
+		baseNum32 := uint32(baseNum)
+		if baseNum32 != expected {
+			holeFound = true
+			putLine(w, "<p><strong>HOLE FOUND: %d - %d</strong></p>\n", expected, baseNum)
+		}
+		expected = baseNum32 + 100
+
+		return nil
+	})
+	if err != nil {
+		putLine(w, "<pre>Failed walking file list: %s</pre>", err)
+		return
+	}
+
+	if !holeFound {
+		putLine(w, "<p><strong>NO HOLE FOUND!</strong></p>")
+	}
+
+	putLine(w, "<p>Validated up to block log: %d</p>", expected-100)
+}
+
+func (d *Diagnose) verifySearchHoles(w http.ResponseWriter, r *http.Request) {
+	putLine(w, "<html><head><title>Checking holes in Search indexes</title></head><h1>Checking holes in Search indexes</h1>")
+
+	number := regexp.MustCompile(`.*/(\d+)\.bleve\.tar\.gz`)
+
+	var holeFound bool
+	var expected uint32
+	err := d.blocksStore.Walk("shards-5000/", func(filename string) error {
+		match := number.FindStringSubmatch(filename)
+		if match == nil {
+			return nil
+		}
+
+		baseNum, _ := strconv.ParseUint(match[1], 10, 32)
+		baseNum32 := uint32(baseNum)
+		if baseNum32 != expected {
+			holeFound = true
+			putLine(w, "<p><strong>HOLE FOUND: %d - %d</strong></p>\n", expected, baseNum)
+		}
+		expected = baseNum32 + 5000
+
+		return nil
+	})
+	if err != nil {
+		putLine(w, "<pre>Failed walking file list: %s</pre>", err)
+		return
+	}
+
+	if !holeFound {
+		putLine(w, "<p><strong>NO HOLE FOUND!</strong></p>")
+	}
+
+	putLine(w, "<p>Validated up to index: %d</p>", expected-5000)
 }
 
 func (d *Diagnose) getServicesHealthChecks(w http.ResponseWriter, r *http.Request) {

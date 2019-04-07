@@ -5,6 +5,7 @@
 *.orig
 *.rej
 vendor
+/diagnose-binary
 
 .envrc
 .idea

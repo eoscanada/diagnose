@@ -28,11 +28,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	// zlog.Info("setting up k8s clientset")
-	// if err := d.setupK8s(); err != nil {
-	// 	zlog.Error("failed setting up k8s", zap.Error(err))
-	// 	os.Exit(1)
-	// }
+	zlog.Info("setting up k8s clientset")
+	if err := d.setupK8s(); err != nil {
+		zlog.Error("failed setting up k8s", zap.Error(err))
+		os.Exit(1)
+	}
 
 	zlog.Info("setting up eosdb")
 	if err := d.setupEOSDB(*flagEOSDB); err != nil {

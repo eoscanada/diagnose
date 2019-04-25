@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"time"
 
 	bt "cloud.google.com/go/bigtable"
 
@@ -65,9 +66,11 @@ func (d *Diagnose) verifyEOSDBHoles(w http.ResponseWriter, r *http.Request) {
 	started := false
 	previousNum := int64(0)
 	previousValidNum := int64(0)
+	startTime := time.Now()
 
 	blocksTable := d.bigtable.Blocks
 
+	// You can test on a lower range with `bt.NewRange("ff76abbf", "ff76abcf")`
 	err := blocksTable.BaseTable.ReadRows(context.Background(), bt.InfiniteRange(""), func(row bt.Row) bool {
 		count++
 
@@ -101,7 +104,7 @@ func (d *Diagnose) verifyEOSDBHoles(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if count%200000 == 0 {
-			putLine(w, "<p>#%d ...</p>\n", num)
+			putLine(w, "<p>#%d ... (%s)</p>\n", num, time.Now().Sub(startTime))
 		}
 
 		started = true
@@ -124,7 +127,7 @@ func (d *Diagnose) verifyEOSDBHoles(w http.ResponseWriter, r *http.Request) {
 		putLine(w, "<p><strong>NO HOLE FOUND!</strong></p>\n")
 	}
 
-	putLine(w, "<p><strong>Completed at block num %d (%d blocks seen)</strong></p>\n", previousNum, count)
+	putLine(w, "<p><strong>Completed at block num %d (%d blocks seen) in %s</strong></p>\n", previousNum, count, time.Now().Sub(startTime))
 }
 
 var doingBlocksHoles bool

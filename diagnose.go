@@ -77,7 +77,6 @@ func (d *Diagnose) verifyEOSDBHoles(w http.ResponseWriter, r *http.Request) {
 		num := int64(math.MaxUint32 - bigtable.BlockNum(row.Key()))
 
 		isValid := hasAllColumns(row, blocksTable.ColBlockJSON, blocksTable.ColMetaHeader, blocksTable.ColMetaWritten, blocksTable.ColMetaIrreversible, blocksTable.ColTrxExecutedIDs)
-		zlog.Debug("Stats", zap.Int64("block_num", num), zap.Bool("is_valid", isValid))
 
 		if !started {
 			previousNum = num + 1

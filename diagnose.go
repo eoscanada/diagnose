@@ -68,7 +68,7 @@ func (d *Diagnose) verifyEOSDBHoles(w http.ResponseWriter, r *http.Request) {
 
 	blocksTable := d.bigtable.Blocks
 
-	err := blocksTable.BaseTable.ReadRows(context.Background(), bt.NewRange("ff76abbf", "ff76abcf"), func(row bt.Row) bool {
+	err := blocksTable.BaseTable.ReadRows(context.Background(), bt.InfiniteRange(""), func(row bt.Row) bool {
 		count++
 
 		num := int64(math.MaxUint32 - bigtable.BlockNum(row.Key()))

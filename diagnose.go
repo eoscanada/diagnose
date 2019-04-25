@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"math"
@@ -8,8 +9,11 @@ import (
 	"regexp"
 	"strconv"
 
+	bt "cloud.google.com/go/bigtable"
+
 	"github.com/eoscanada/bstream/store"
 	"github.com/eoscanada/eosdb"
+	"github.com/eoscanada/eosdb/bigtable"
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,6 +25,7 @@ type Diagnose struct {
 	routes *mux.Router
 
 	namespace string
+	bigtable  *bigtable.Bigtable
 	eosdb     eosdb.DBReader
 
 	blocksStore store.ArchiveStore
@@ -42,9 +47,84 @@ func (d *Diagnose) setupRoutes() {
 	d.routes = r
 }
 
+var doingEOSDBHoles bool
+
 func (d *Diagnose) verifyEOSDBHoles(w http.ResponseWriter, r *http.Request) {
+	if doingEOSDBHoles {
+		putLine(w, "<h1>Already running, try later</h1>")
+		return
+	}
+
+	doingEOSDBHoles = true
+	defer func() { doingEOSDBHoles = false }()
+
 	putLine(w, "<html><head><title>Checking holes in EOSDB</title></head><h1>Checking holes in EOSDB</h1>")
-	putLine(w, "<p>TODO</p>")
+
+	count := int64(0)
+	holeFound := false
+	started := false
+	previousNum := int64(0)
+	previousValidNum := int64(0)
+
+	blocksTable := d.bigtable.Blocks
+
+	err := blocksTable.BaseTable.ReadRows(context.Background(), bt.NewRange("ff76abbf", "ff76abcf"), func(row bt.Row) bool {
+		count++
+
+		num := int64(math.MaxUint32 - bigtable.BlockNum(row.Key()))
+
+		isValid := hasAllColumns(row, blocksTable.ColBlockJSON, blocksTable.ColMetaHeader, blocksTable.ColMetaWritten, blocksTable.ColMetaIrreversible, blocksTable.ColTrxExecutedIDs)
+		zlog.Debug("Stats", zap.Int64("block_num", num), zap.Bool("is_valid", isValid))
+
+		if !started {
+			previousNum = num + 1
+			previousValidNum = num + 1
+			putLine(w, "<p><strong>Start block %d</strong></p>\n", num)
+		}
+
+		difference := previousNum - num
+		differenceInvalid := previousValidNum - num
+
+		if difference > 1 && started {
+			holeFound = true
+			putLine(w, "<p><strong>Found block hole: [%d, %d]</strong></p>\n", num+1, previousNum-1)
+		}
+
+		if differenceInvalid > 1 && started && isValid {
+			holeFound = true
+			putLine(w, "<p><strong>Found missing column(s) hole: [%d, %d]</strong></p>\n", num+1, previousValidNum-1)
+		}
+
+		previousNum = num
+		if isValid {
+			previousValidNum = num
+		}
+
+		if count%200000 == 0 {
+			putLine(w, "<p>#%d ...</p>\n", num)
+		}
+
+		started = true
+
+		return true
+	})
+
+	differenceInvalid := previousValidNum - previousNum
+	if differenceInvalid > 1 && started {
+		holeFound = true
+		putLine(w, "<p><strong>Found missing column(s) hole: [%d, %d]</strong></p>\n", previousNum, previousValidNum-1)
+	}
+
+	if err != nil {
+		putLine(w, "<p><strong>Error: %s</strong></p>\n", err.Error())
+		return
+	}
+
+	if !holeFound {
+		putLine(w, "<p><strong>NO HOLE FOUND!</strong></p>\n")
+	}
+
+	putLine(w, "<p><strong>Completed at block num %d (%d blocks seen)</strong></p>\n", previousNum, count)
 }
 
 var doingBlocksHoles bool
@@ -54,6 +134,7 @@ func (d *Diagnose) verifyBlocksHoles(w http.ResponseWriter, r *http.Request) {
 		putLine(w, "<h1>Already running, try later</h1>")
 		return
 	}
+
 	doingBlocksHoles = true
 	defer func() { doingBlocksHoles = false }()
 
@@ -65,13 +146,11 @@ func (d *Diagnose) verifyBlocksHoles(w http.ResponseWriter, r *http.Request) {
 	var expected uint32
 	var count int
 	err := d.blocksStore.Walk("", func(filename string) error {
-		fmt.Println("MAMA", filename)
 		match := number.FindStringSubmatch(filename)
 		if match == nil {
 			return nil
 		}
 
-		fmt.Println("MATCH", match)
 		count++
 		baseNum, _ := strconv.ParseUint(match[1], 10, 32)
 		baseNum32 := uint32(baseNum)
@@ -191,4 +270,26 @@ func putLine(w http.ResponseWriter, format string, v ...interface{}) {
 	flush := w.(http.Flusher)
 	fmt.Fprintf(w, format, v...)
 	flush.Flush()
+}
+
+func hasAllColumns(row bt.Row, columns ...string) bool {
+	for _, column := range columns {
+		if !hasBtColumn(row, column) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func hasBtColumn(row bt.Row, familyColumn string) bool {
+	for _, cols := range row {
+		for _, el := range cols {
+			if el.Column == familyColumn {
+				return true
+			}
+		}
+	}
+
+	return false
 }

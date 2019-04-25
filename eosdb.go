@@ -4,18 +4,19 @@ import (
 	"github.com/eoscanada/eosdb/bigtable"
 )
 
-func (d *Diagnose) setupEOSDB(cnx string) error {
-	info, err := bigtable.NewConnectionInfo(cnx)
+func (d *Diagnose) setupEOSDB(connectionInfo string) error {
+	info, err := bigtable.NewConnectionInfo(connectionInfo)
 	if err != nil {
 		return err
 	}
 
-	zeDB, err := bigtable.New(info.TablePrefix, info.Project, info.Instance, false)
+	bigtable, err := bigtable.New(info.TablePrefix, info.Project, info.Instance, false)
 	if err != nil {
 		return err
 	}
 
-	d.eosdb = zeDB
+	d.bigtable = bigtable
+	d.eosdb = bigtable
 
 	return nil
 }

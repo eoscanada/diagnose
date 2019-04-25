@@ -5,7 +5,9 @@
 *.orig
 *.rej
 vendor
+/diagnose
 /diagnose-binary
 
 .envrc
 .idea
+.vscode

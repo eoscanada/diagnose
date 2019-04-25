@@ -8,8 +8,8 @@ import (
 )
 
 var flagNamespace = flag.String("namespace", "default", "k8s namespace inspected by this diagnose instance")
-var flagEOSDB = flag.String("eosdb-connection", "", "eosdb connection string as 'project:instance:table-prefix'")
-var flagBlocksStore = flag.String("blocks-store", "gs://eoscanada-public-nodeos-archive/nodeos-mainnet-v9", "Blocks logs storage location")
+var flagEOSDB = flag.String("eosdb-connection", "eoscanada-shared-services:shared-bigtable:aca3-v3", "eosdb connection string as 'project:instance:table-prefix'")
+var flagBlocksStore = flag.String("blocks-store", "gs://eoscanada-public-nodeos-archive/nodeos-mainnet-v10", "Blocks logs storage location")
 var flagSearchIndexesStore = flag.String("search-indexes-store", "gs://eoscanada-public-indices-archive/search-aca3-v7", "GS location of search indexes storage")
 
 func main() {
@@ -28,11 +28,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	zlog.Info("setting up k8s clientset")
-	if err := d.setupK8s(); err != nil {
-		zlog.Error("failed setting up k8s", zap.Error(err))
-		os.Exit(1)
-	}
+	// zlog.Info("setting up k8s clientset")
+	// if err := d.setupK8s(); err != nil {
+	// 	zlog.Error("failed setting up k8s", zap.Error(err))
+	// 	os.Exit(1)
+	// }
 
 	zlog.Info("setting up eosdb")
 	if err := d.setupEOSDB(*flagEOSDB); err != nil {

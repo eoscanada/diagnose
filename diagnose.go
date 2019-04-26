@@ -1,18 +1,22 @@
 package main
 
 import (
-	"context"
 	"fmt"
+	"github.com/abourget/llerrgroup"
 	"io/ioutil"
 	"math"
 	"net/http"
 	"regexp"
+	"runtime"
 	"strconv"
+	"strings"
+	"sync"
 	"time"
 
 	bt "cloud.google.com/go/bigtable"
 
 	"github.com/eoscanada/bstream/store"
+	"github.com/eoscanada/eos-go"
 	"github.com/eoscanada/eosdb"
 	"github.com/eoscanada/eosdb/bigtable"
 	"github.com/gorilla/mux"
@@ -24,6 +28,8 @@ import (
 type Diagnose struct {
 	addr   string
 	routes *mux.Router
+
+	api *eos.API
 
 	namespace string
 	bigtable  *bigtable.Bigtable
@@ -38,7 +44,8 @@ type Diagnose struct {
 func (d *Diagnose) setupRoutes() {
 	r := mux.NewRouter()
 	r.Path("/").Methods("GET").HandlerFunc(d.index)
-	r.Path("/v1/diagnose/verify_eosdb_holes").Methods("GET").HandlerFunc(d.verifyEOSDBHoles)
+	r.Path("/v1/diagnose/verify_eosdb_block_holes").Methods("GET").HandlerFunc(d.verifyEOSDBBlockHoles)
+	r.Path("/v1/diagnose/verify_eosdb_trx_problems").Methods("GET").HandlerFunc(d.verifyEOSDBTrxProblems)
 	r.Path("/v1/diagnose/verify_blocks_holes").Methods("GET").HandlerFunc(d.verifyBlocksHoles)
 	r.Path("/v1/diagnose/verify_search_holes").Methods("GET").HandlerFunc(d.verifySearchHoles)
 	r.Path("/v1/diagnose/services_health_checks").Methods("GET").HandlerFunc(d.getServicesHealthChecks)
@@ -48,18 +55,17 @@ func (d *Diagnose) setupRoutes() {
 	d.routes = r
 }
 
-var doingEOSDBHoles bool
+var doingEOSDBBlockHoles bool
 
-func (d *Diagnose) verifyEOSDBHoles(w http.ResponseWriter, r *http.Request) {
-	if doingEOSDBHoles {
+func (d *Diagnose) verifyEOSDBBlockHoles(w http.ResponseWriter, r *http.Request) {
+	putPreambule(w, "Checking block holes in EOSDB")
+	if doingEOSDBBlockHoles {
 		putLine(w, "<h1>Already running, try later</h1>")
 		return
 	}
 
-	doingEOSDBHoles = true
-	defer func() { doingEOSDBHoles = false }()
-
-	putLine(w, "<html><head><title>Checking holes in EOSDB</title></head><h1>Checking holes in EOSDB</h1>")
+	doingEOSDBBlockHoles = true
+	defer func() { doingEOSDBBlockHoles = false }()
 
 	count := int64(0)
 	holeFound := false
@@ -73,7 +79,7 @@ func (d *Diagnose) verifyEOSDBHoles(w http.ResponseWriter, r *http.Request) {
 	blocksTable := d.bigtable.Blocks
 
 	// You can test on a lower range with `bt.NewRange("ff76abbf", "ff76abcf")`
-	err := blocksTable.BaseTable.ReadRows(context.Background(), bt.InfiniteRange(""), func(row bt.Row) bool {
+	err := blocksTable.BaseTable.ReadRows(r.Context(), bt.InfiniteRange(""), func(row bt.Row) bool {
 		count++
 
 		num := int64(math.MaxUint32 - bigtable.BlockNum(row.Key()))
@@ -135,9 +141,95 @@ func (d *Diagnose) verifyEOSDBHoles(w http.ResponseWriter, r *http.Request) {
 	putLine(w, "<p><strong>Completed at block num %d (%d blocks seen) in %s</strong></p>\n", previousNum, count, time.Now().Sub(startTime))
 }
 
+var doingEOSDBTrxProblems = false
+
+func (d *Diagnose) verifyEOSDBTrxProblems(w http.ResponseWriter, r *http.Request) {
+	putPreambule(w, "Checking transaction problems in EOSDB")
+
+	if doingEOSDBTrxProblems {
+		putLine(w, "<h1>Already running, try later</h1>")
+		return
+	}
+
+	doingEOSDBTrxProblems = true
+	defer func() { doingEOSDBTrxProblems = false }()
+
+	infoResponse, err := d.api.GetInfo()
+	if err != nil {
+		putErrorLine(w, "unable to get info from API node", err)
+		return
+	}
+
+	irrervisbleBlockNum := infoResponse.LastIrreversibleBlockNum
+	count := int64(0)
+	problemFound := false
+	startTime := time.Now()
+
+	trxsTable := d.bigtable.Transactions
+
+	processRowRange := func(rowRange bt.RowSet) error {
+		return trxsTable.BaseTable.ReadRows(r.Context(), rowRange, func(row bt.Row) bool {
+			key := row.Key()
+			trxID := key[0:64]
+			prefixTrxID := trxID[0:8]
+			blockNum := bigtable.BlockNum(key[65:73])
+
+			if blockNum > irrervisbleBlockNum {
+				// Transaction that are in a block not yet considered irreversible are not flagged as problem
+				return true
+			}
+
+			count++
+			problemFound = true
+			putSyncLine(w, `<p><strong>Found problem with <a href="%s">%s</a> @ #%d (missing meta:irreversible column)</strong></p>`+"\n", inferEosqTrxLink(trxID), prefixTrxID, blockNum)
+
+			return true
+		}, bt.RowFilter(bt.ConditionFilter(bt.ColumnFilter("irreversible"), nil, bt.StripValueFilter())))
+	}
+
+	concurrentReadCount := runtime.NumCPU() - 1
+	if concurrentReadCount > 16 {
+		concurrentReadCount = 16
+	}
+
+	rowRanges := createTrxRowSets(concurrentReadCount)
+	group := llerrgroup.New(concurrentReadCount)
+
+	putLine(w, "<h2>Starting groups (concurrency %d)</h2>", concurrentReadCount)
+	putLine(w, "<small>Note: there no progress report within a group</small>")
+
+	for _, rowRange := range rowRanges {
+		rowRange := rowRange
+
+		if group.Stop() {
+			putSyncLine(w, "<h4>Group completed %s</h4>", rowRange)
+			break
+		}
+
+		group.Go(func() error {
+			putSyncLine(w, "<h4>Group range %s starting...</h4>", rowRange)
+			return processRowRange(rowRange)
+		})
+	}
+
+	zlog.Debug("waiting for all parallel stream rows operation to finish")
+	if err := group.Wait(); err != nil {
+		putLine(w, "<p><strong>Error: %s</strong></p>\n", err.Error())
+		return
+	}
+
+	if !problemFound {
+		putLine(w, "<p><strong>No problem found!</strong></p>\n")
+	}
+
+	putLine(w, "<p><strong>Completed (%d problematic trxs seen) in %s</strong></p>\n", count, time.Now().Sub(startTime))
+
+}
+
 var doingBlocksHoles bool
 
 func (d *Diagnose) verifyBlocksHoles(w http.ResponseWriter, r *http.Request) {
+	putPreambule(w, "Checking holes in block logs")
 	if doingBlocksHoles {
 		putLine(w, "<h1>Already running, try later</h1>")
 		return
@@ -145,8 +237,6 @@ func (d *Diagnose) verifyBlocksHoles(w http.ResponseWriter, r *http.Request) {
 
 	doingBlocksHoles = true
 	defer func() { doingBlocksHoles = false }()
-
-	putLine(w, "<html><head><title>Checking holes in Block logs</title></head><h1>Checking holes in Block logs</h1>")
 
 	number := regexp.MustCompile(`(\d{10})`)
 
@@ -187,7 +277,7 @@ func (d *Diagnose) verifyBlocksHoles(w http.ResponseWriter, r *http.Request) {
 }
 
 func (d *Diagnose) verifySearchHoles(w http.ResponseWriter, r *http.Request) {
-	putLine(w, "<html><head><title>Checking holes in Search indexes</title></head><h1>Checking holes in Search indexes</h1>")
+	putPreambule(w, "Checking holes in Search indexes")
 
 	number := regexp.MustCompile(`.*/(\d+)\.bleve\.tar\.gz`)
 
@@ -222,7 +312,7 @@ func (d *Diagnose) verifySearchHoles(w http.ResponseWriter, r *http.Request) {
 }
 
 func (d *Diagnose) getServicesHealthChecks(w http.ResponseWriter, r *http.Request) {
-	putLine(w, "<html><head><title>Services health checks</title></head><h1>All services health checks</h1>")
+	putPreambule(w, "Services health checks")
 
 	services, err := d.cluster.CoreV1().Services(d.namespace).List(meta_v1.ListOptions{})
 	if err != nil {
@@ -262,8 +352,6 @@ func (d *Diagnose) getServicesHealthChecks(w http.ResponseWriter, r *http.Reques
 }
 
 func (d *Diagnose) index(w http.ResponseWriter, r *http.Request) {
-	// TODO: fetch in-cluster schtuff..
-
 	data := &tplData{}
 
 	d.renderTemplate(w, data)
@@ -272,6 +360,50 @@ func (d *Diagnose) index(w http.ResponseWriter, r *http.Request) {
 func (d *Diagnose) Serve() error {
 	zlog.Info("Serving on address", zap.String("addr", d.addr))
 	return http.ListenAndServe(d.addr, d.routes)
+}
+
+func putPreambule(w http.ResponseWriter, title string) {
+	// FIXME: More style to a constant and inject in `d.renderTemplate` data so it's shared between index.html and here
+	style := strings.ReplaceAll(`
+		body {
+			background-color: #f3f3f7;
+			color: #ff4661;
+			margin: 0;
+			padding: 0;
+			font-family: "Open Sans", sans-serif;
+			-webkit-font-smoothing: antialiased;
+			-moz-osx-font-smoothing: grayscale;
+			font-size: 16px;
+			line-height: 1.6;
+			letter-spacing: 0.5px;
+		}
+
+		h3, h4, h5, h6, p {
+			margin: 0.25rem 0;
+		}
+	`, "\n", " ")
+
+	putLine(w, `<html><head><title>%s</title><style>%s</style></head><body><div style="width:90%%; margin: 2rem auto;"><h1>%s</h1>`, title, style, title)
+}
+
+func putErrorLine(w http.ResponseWriter, prefix string, err error) {
+	putLine(w, "<p><strong>%s: %s</strong></p>\n", prefix, err.Error())
+}
+
+var lock sync.Mutex
+
+func putSyncLine(w http.ResponseWriter, format string, v ...interface{}) {
+	line := fmt.Sprintf(format, v...)
+
+	flush := w.(http.Flusher)
+
+	lock.Lock()
+	defer lock.Unlock()
+
+	fmt.Fprint(w, line)
+	flush.Flush()
+
+	zlog.Info("html output line", zap.String("line", line))
 }
 
 func putLine(w http.ResponseWriter, format string, v ...interface{}) {
@@ -304,4 +436,39 @@ func hasBtColumn(row bt.Row, familyColumn string) bool {
 	}
 
 	return false
+}
+
+func inferEosqTrxLink(trxID string) string {
+	return inferEosqLink("/tx/" + trxID)
+}
+
+// FIXME: Make network configurable so we can link to right place ...
+func inferEosqLink(path string) string {
+	return fmt.Sprintf("https://eosq.app/%s", path)
+}
+
+func createTrxRowSets(concurrentReadCount int) []bt.RowSet {
+	letters := "123456789abcdef"
+	if concurrentReadCount > len(letters)+1 {
+		panic(fmt.Errorf("only accepting concurrent <= %d, got %d", len(letters), concurrentReadCount))
+	}
+
+	step := int(math.Ceil(float64(len(letters)) / float64(concurrentReadCount)))
+	startPrefix := ""
+	var endPrefix string
+
+	var rowRanges []bt.RowSet
+
+	for i := 0; i < len(letters); i += step {
+		endPrefix = string(letters[i]) + strings.Repeat("0", 63) + ":"
+		rowRanges = append(rowRanges, bt.NewRange(startPrefix, endPrefix))
+
+		startPrefix = endPrefix
+	}
+
+	// FIXME: Find a way to get up to last possible keys of `a:` set without copying the `prefixSuccessor` method from bigtable
+	//        Hard-coded for now.
+	rowRanges = append(rowRanges, bt.NewRange(startPrefix, strings.Repeat("f", 64)+";"))
+
+	return rowRanges
 }

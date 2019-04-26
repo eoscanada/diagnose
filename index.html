@@ -1,15 +1,36 @@
 <html>
-<head><title>dfuse diagnose</title></head>
+<head>
+    <title>dfuse diagnose</title>
+    <style>
+        body {
+            background-color: #f3f3f7;
+            color: #ff4661;
+            margin: 0;
+            padding: 0;
+            font-family: "Open Sans", sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            font-size: 16px;
+            line-height: 1.6;
+            letter-spacing: 0.5px;
+        }
+
+        p {
+            margin: 0.25rem;
+        }
+    </style>
+</head>
 <body>
+    <div style="width:90%; margin: 2rem auto;">
+        <h2>dfuse diagnosis</h2>
 
-<h2>dfuse diagnosis</h2>
-
-<ul>
-    <li><a href="/v1/diagnose/verify_eosdb_holes" target="_blank">Verify holes in EOS DB</a></li>
-    <li><a href="/v1/diagnose/verify_blocks_holes" target="_blank">Verify holes in Blocks logs</a></li>
-    <li><a href="/v1/diagnose/verify_search_holes" target="_blank">Verify holes in Search indexes</a></li>
-    <li><a href="/v1/diagnose/services_health_checks" target="_blank">All services's endpoints health checks</a></li>
-</ul>
-
-
-</body></html>
+        <ul>
+            <li><a href="/v1/diagnose/verify_eosdb_block_holes" target="_blank">Verify block holes in EOS DB</a></li>
+            <li><a href="/v1/diagnose/verify_eosdb_trx_problems" target="_blank">Verify transaction problems in EOS DB</a></li>
+            <li><a href="/v1/diagnose/verify_blocks_holes" target="_blank">Verify holes in Blocks logs</a></li>
+            <li><a href="/v1/diagnose/verify_search_holes" target="_blank">Verify holes in Search indexes</a></li>
+            <li><a href="/v1/diagnose/services_health_checks" target="_blank">All services's endpoints health checks</a></li>
+        </ul>
+    </div>
+</body>
+</html>

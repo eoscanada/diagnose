@@ -269,9 +269,13 @@ func (d *Diagnose) Serve() error {
 }
 
 func putLine(w http.ResponseWriter, format string, v ...interface{}) {
+	line := fmt.Sprintf(format, v...)
+
 	flush := w.(http.Flusher)
-	fmt.Fprintf(w, format, v...)
+	fmt.Fprint(w, line)
 	flush.Flush()
+
+	zlog.Info("html output line", zap.String("line", line))
 }
 
 func hasAllColumns(row bt.Row, columns ...string) bool {

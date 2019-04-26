@@ -11,6 +11,7 @@ var flagNamespace = flag.String("namespace", "default", "k8s namespace inspected
 var flagEOSDB = flag.String("eosdb-connection", "eoscanada-shared-services:shared-bigtable:aca3-v3", "eosdb connection string as 'project:instance:table-prefix'")
 var flagBlocksStore = flag.String("blocks-store", "gs://eoscanada-public-nodeos-archive/nodeos-mainnet-v10", "Blocks logs storage location")
 var flagSearchIndexesStore = flag.String("search-indexes-store", "gs://eoscanada-public-indices-archive/search-aca3-v7", "GS location of search indexes storage")
+var flagSkipK8S = flag.Bool("skip-k8s", false, "Useful in development to avoid setuping access to a K8S cluster")
 
 func main() {
 	flag.Parse()
@@ -28,10 +29,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	zlog.Info("setting up k8s clientset")
-	if err := d.setupK8s(); err != nil {
-		zlog.Error("failed setting up k8s", zap.Error(err))
-		os.Exit(1)
+	performK8sSetup := !*flagSkipK8S
+	if performK8sSetup {
+		zlog.Info("setting up k8s clientset")
+		if err := d.setupK8s(); err != nil {
+			zlog.Error("failed setting up k8s", zap.Error(err))
+			os.Exit(1)
+		}
 	}
 
 	zlog.Info("setting up eosdb")

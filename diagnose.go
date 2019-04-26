@@ -66,7 +66,9 @@ func (d *Diagnose) verifyEOSDBHoles(w http.ResponseWriter, r *http.Request) {
 	started := false
 	previousNum := int64(0)
 	previousValidNum := int64(0)
+
 	startTime := time.Now()
+	batchStartTime := time.Now()
 
 	blocksTable := d.bigtable.Blocks
 
@@ -81,6 +83,8 @@ func (d *Diagnose) verifyEOSDBHoles(w http.ResponseWriter, r *http.Request) {
 		if !started {
 			previousNum = num + 1
 			previousValidNum = num + 1
+			batchStartTime = time.Now()
+
 			putLine(w, "<p><strong>Start block %d</strong></p>\n", num)
 		}
 
@@ -103,13 +107,15 @@ func (d *Diagnose) verifyEOSDBHoles(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if count%200000 == 0 {
-			putLine(w, "<p>#%d ... (%s)</p>\n", num, time.Now().Sub(startTime))
+			now := time.Now()
+			putLine(w, "<p>200K rows read @ #%d (batch %s, total %s) ...</p>\n", num, now.Sub(batchStartTime), now.Sub(startTime))
+			batchStartTime = time.Now()
 		}
 
 		started = true
 
 		return true
-	})
+	}, bt.RowFilter(bt.StripValueFilter()))
 
 	differenceInvalid := previousValidNum - previousNum
 	if differenceInvalid > 1 && started {

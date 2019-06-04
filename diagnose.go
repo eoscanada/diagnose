@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/abourget/llerrgroup"
 	"io/ioutil"
 	"math"
 	"net/http"
@@ -12,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/abourget/llerrgroup"
 
 	bt "cloud.google.com/go/bigtable"
 
@@ -154,13 +155,6 @@ func (d *Diagnose) verifyEOSDBTrxProblems(w http.ResponseWriter, r *http.Request
 	doingEOSDBTrxProblems = true
 	defer func() { doingEOSDBTrxProblems = false }()
 
-	infoResponse, err := d.api.GetInfo()
-	if err != nil {
-		putErrorLine(w, "unable to get info from API node", err)
-		return
-	}
-
-	irrervisbleBlockNum := infoResponse.LastIrreversibleBlockNum
 	count := int64(0)
 	problemFound := false
 	startTime := time.Now()
@@ -174,17 +168,12 @@ func (d *Diagnose) verifyEOSDBTrxProblems(w http.ResponseWriter, r *http.Request
 			prefixTrxID := trxID[0:8]
 			blockNum := bigtable.BlockNum(key[65:73])
 
-			if blockNum > irrervisbleBlockNum {
-				// Transaction that are in a block not yet considered irreversible are not flagged as problem
-				return true
-			}
-
 			count++
 			problemFound = true
-			putSyncLine(w, `<p><strong>Found problem with <a href="%s">%s</a> @ #%d (missing meta:irreversible column)</strong></p>`+"\n", inferEosqTrxLink(trxID), prefixTrxID, blockNum)
+			putSyncLine(w, `<p><strong>Found problem with <a href="%s">%s</a> @ #%d (missing meta:written column)</strong></p>`+"\n", inferEosqTrxLink(trxID), prefixTrxID, blockNum)
 
 			return true
-		}, bt.RowFilter(bt.ConditionFilter(bt.ColumnFilter("irreversible"), nil, bt.StripValueFilter())))
+		}, bt.RowFilter(bt.ConditionFilter(bt.ColumnFilter("written"), nil, bt.StripValueFilter())))
 	}
 
 	concurrentReadCount := runtime.NumCPU() - 1
@@ -196,7 +185,7 @@ func (d *Diagnose) verifyEOSDBTrxProblems(w http.ResponseWriter, r *http.Request
 	group := llerrgroup.New(concurrentReadCount)
 
 	putLine(w, "<h2>Starting groups (concurrency %d)</h2>", concurrentReadCount)
-	putLine(w, "<small>Note: there no progress report within a group</small>")
+	putLine(w, "<small>Note: there's no progress report within a group</small>")
 
 	for _, rowRange := range rowRanges {
 		rowRange := rowRange

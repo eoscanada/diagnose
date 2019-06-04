@@ -1,11 +1,12 @@
 module github.com/eoscanada/diagnose
 
 require (
+	cloud.google.com/go v0.35.1
 	github.com/abourget/llerrgroup v0.0.0-20161118145731-75f536392d17
-	github.com/eoscanada/bstream v1.3.6
+	github.com/eoscanada/bstream v1.5.0
 	github.com/eoscanada/derr v0.3.1
 	github.com/eoscanada/eos-go v0.8.5
-	github.com/eoscanada/eosdb v0.0.5
+	github.com/eoscanada/eosdb v0.0.12-0.20190529190946-2bf2933f756a
 	github.com/eoscanada/logging v0.1.0
 	github.com/google/gofuzz v0.0.0-20170612174753-24818f796faf // indirect
 	github.com/googleapis/gnostic v0.2.0 // indirect

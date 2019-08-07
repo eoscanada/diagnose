@@ -391,6 +391,11 @@ func putLine(w http.ResponseWriter, format string, v ...interface{}) {
 	zlog.Info("html output line", zap.String("line", line))
 }
 
+func flushWriter(w http.ResponseWriter) {
+	flusher := w.(http.Flusher)
+	flusher.Flush()
+}
+
 func hasAllColumns(row bt.Row, columns ...string) bool {
 	for _, column := range columns {
 		if !hasBtColumn(row, column) {

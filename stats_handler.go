@@ -8,9 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/eoscanada/bstream/hlog"
-
 	"github.com/eoscanada/bstream"
+	"github.com/eoscanada/bstream/hlog"
 	"github.com/eoscanada/derr"
 	"github.com/eoscanada/dhttp"
 	"github.com/eoscanada/validator"
@@ -58,11 +57,13 @@ func (d *Diagnose) verifyStats(w http.ResponseWriter, r *http.Request) {
 		"StartBlock": startBlockNum,
 		"StopBlock":  stopBlockNum,
 	})
+	flushWriter(w)
 
 	stats := &StatsBlockHandler{
-		writer:       w,
-		stopBlockNum: stopBlockNum,
-		logInterval:  logIntervalInBlock(startBlockNum, stopBlockNum),
+		writer:        w,
+		startBlockNum: startBlockNum,
+		stopBlockNum:  stopBlockNum,
+		logInterval:   logIntervalInBlock(startBlockNum, stopBlockNum),
 	}
 
 	source := bstream.NewFileSource(
@@ -122,11 +123,7 @@ func logIntervalInBlock(startBlock, stopBlock uint64) int {
 		return 100000
 	}
 
-	if delta < 10000000 {
-		return 1000000
-	}
-
-	return 10000000
+	return 250000
 }
 
 type StatsBlockHandler struct {
@@ -145,39 +142,35 @@ type StatsBlockHandler struct {
 
 	ElapsedTime time.Duration
 
-	stopBlockNum uint64
-	timeStart    time.Time
-	logInterval  int
-}
+	startBlockNum               uint64
+	stopBlockNum                uint64
+	highestPreprocessedBlockNum uint64
+	highestProcessBlockNum      uint64
 
-type BlockStats struct {
-	ActionCount      uint64
-	TransactionCount uint64
-
-	TokenActionCount      uint64
-	TokenNotifCount       uint64
-	TokenTransactionCount uint64
-
-	AccountCreationActionCount      uint64
-	AccountCreationTransactionCount uint64
+	timeStart   time.Time
+	logInterval int
 }
 
 func (s *StatsBlockHandler) preprocessBlock(block *bstream.Block) (interface{}, error) {
 	blockNum := block.Num()
-	if blockNum > s.stopBlockNum {
+	if blockNum < s.startBlockNum || blockNum > s.stopBlockNum {
 		return nil, nil
 	}
 
+	if blockNum > s.highestPreprocessedBlockNum {
+		s.highestPreprocessedBlockNum = blockNum
+	}
+
 	blk := block.ToNative().(*hlog.Block)
-	stats := &BlockStats{}
+	s.BlockCount++
 
 	for _, trx := range blk.AllExecutedTransactionTraces() {
-		stats.TransactionCount++
+		s.TransactionCount++
 
 		seenAccountCreationAction := false
 		seenTokenTransactionAction := false
 		for _, action := range trx.AllActions() {
-			stats.ActionCount++
+			s.ActionCount++
 
 			receiver := action.Receiver()
 			account := action.Account()
@@ -185,36 +178,41 @@ func (s *StatsBlockHandler) preprocessBlock(block *bstream.Block) (interface{}, 
 			isNotif := receiver != account
 
 			if receiver == "eosio" && account == "eosio" && actionName == "newaccount" {
-				stats.AccountCreationActionCount++
+				s.AccountCreationActionCount++
 				seenAccountCreationAction = true
 			}
 
 			if actionName == "transfer" || actionName == "close" || actionName == "issue" || actionName == "retire" {
-				stats.TokenActionCount++
 				seenTokenTransactionAction = true
 
 				if isNotif {
-					stats.TokenNotifCount++
+					s.TokenNotifCount++
+				} else {
+					s.TokenActionCount++
 				}
 			}
 		}
 
 		if seenAccountCreationAction {
-			stats.AccountCreationTransactionCount++
+			s.AccountCreationTransactionCount++
 		}
 
 		if seenTokenTransactionAction {
-			stats.TokenTransactionCount++
+			s.TokenTransactionCount++
 		}
 	}
 
-	return stats, nil
+	return nil, nil
 }
 
 func (s *StatsBlockHandler) handleBlock(block *bstream.Block, obj interface{}) error {
 	blockNum := block.Num()
 	if blockNum > s.stopBlockNum {
 		return io.EOF
+	}
+
+	if blockNum > s.highestProcessBlockNum {
+		s.highestProcessBlockNum = blockNum
 	}
 
 	if s.timeStart.IsZero() {
@@ -224,29 +222,39 @@ func (s *StatsBlockHandler) handleBlock(block *bstream.Block, obj interface{}) e
 
 	if s.logInterval > 0 && blockNum%uint64(s.logInterval) == 0 {
 		putLine(s.writer, "<small>At block %d</small><br>", blockNum)
+		s.logStats()
 	}
-
-	stats := obj.(*BlockStats)
-	if stats == nil {
-		return nil
-	}
-
-	s.BlockCount++
-	s.ActionCount += stats.ActionCount
-	s.TransactionCount += stats.TransactionCount
-
-	s.TokenActionCount += stats.TokenActionCount
-	s.TokenNotifCount += stats.TokenNotifCount
-	s.TokenTransactionCount += stats.TokenTransactionCount
-
-	s.AccountCreationActionCount += stats.AccountCreationActionCount
-	s.AccountCreationTransactionCount += stats.AccountCreationTransactionCount
 
 	if blockNum == s.stopBlockNum {
 		s.ElapsedTime = time.Since(s.timeStart)
+		s.logStats()
 	}
 
 	return nil
+}
+
+func (s *StatsBlockHandler) logStats() {
+	fields := []zap.Field{
+		zap.Uint64("action_count", s.ActionCount),
+		zap.Uint64("transaction_count", s.TransactionCount),
+		zap.Uint64("block_count", s.BlockCount),
+		zap.Uint64("token_action_count", s.TokenActionCount),
+		zap.Uint64("token_notif_count", s.TokenNotifCount),
+		zap.Uint64("token_transaction_count", s.TokenTransactionCount),
+		zap.Uint64("account_creation_action_count", s.AccountCreationActionCount),
+		zap.Uint64("account_creation_transaction_count", s.AccountCreationTransactionCount),
+		zap.Uint64("highest_preprocessed_block_num", s.highestPreprocessedBlockNum),
+		zap.Uint64("highest_process_block_num", s.highestProcessBlockNum),
+	}
+
+	elapsedTime := s.ElapsedTime
+	if uint64(elapsedTime) == 0 {
+		elapsedTime = time.Since(s.timeStart)
+	}
+
+	fields = append(fields, zap.Duration("elapsed_time", elapsedTime))
+
+	zlog.Info("ongoing stats", fields...)
 }
 
 var statsTemplateContent = `

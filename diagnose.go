@@ -14,7 +14,7 @@ import (
 
 	bt "cloud.google.com/go/bigtable"
 	"github.com/abourget/llerrgroup"
-	"github.com/eoscanada/dstore"
+	"github.com/eoscanada/bstream/store"
 	"github.com/eoscanada/eos-go"
 	"github.com/eoscanada/eosdb"
 	"github.com/eoscanada/eosdb/bigtable"
@@ -34,8 +34,8 @@ type Diagnose struct {
 	bigtable  *bigtable.Bigtable
 	eosdb     eosdb.DBReader
 
-	blocksStore dstore.Store
-	searchStore dstore.Store
+	blocksStore store.ArchiveStore
+	searchStore *store.SimpleGStore
 
 	cluster *kubernetes.Clientset
 }

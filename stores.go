@@ -1,16 +1,16 @@
 package main
 
 import (
-	"github.com/eoscanada/dstore"
+	"github.com/eoscanada/bstream/store"
 )
 
 func (d *Diagnose) setupStores(blocksStoreURL, searchIndexesStoreURL string) error {
-	searchStore, err := dstore.NewSimpleStore(searchIndexesStoreURL)
+	searchStore, err := store.NewSimpleGStore(searchIndexesStoreURL)
 	if err != nil {
 		return err
 	}
 
-	blocksStore, err := dstore.NewJSONLStore(blocksStoreURL)
+	blocksStore, err := store.NewSimpleArchiveStore(blocksStoreURL)
 	if err != nil {
 		return err
 	}

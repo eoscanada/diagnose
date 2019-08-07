@@ -67,9 +67,8 @@ func (d *Diagnose) verifyStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	source := bstream.NewFileSource(
-		bstream.BlockKindEOS,
 		d.blocksStore,
-		startBlockNum,
+		uint32(startBlockNum),
 		32,
 		bstream.PreprocessFunc(stats.preprocessBlock),
 		bstream.HandlerFunc(stats.handleBlock),
@@ -151,8 +150,8 @@ type StatsBlockHandler struct {
 	logInterval int
 }
 
-func (s *StatsBlockHandler) preprocessBlock(block *bstream.Block) (interface{}, error) {
-	blockNum := block.Num()
+func (s *StatsBlockHandler) preprocessBlock(block *hlog.Block) (interface{}, error) {
+	blockNum := uint64(block.BlockNum())
 	if blockNum < s.startBlockNum || blockNum > s.stopBlockNum {
 		return nil, nil
 	}
@@ -161,10 +160,9 @@ func (s *StatsBlockHandler) preprocessBlock(block *bstream.Block) (interface{}, 
 		s.highestPreprocessedBlockNum = blockNum
 	}
 
-	blk := block.ToNative().(*hlog.Block)
 	s.BlockCount++
 
-	for _, trx := range blk.AllExecutedTransactionTraces() {
+	for _, trx := range block.AllExecutedTransactionTraces() {
 		s.TransactionCount++
 
 		seenAccountCreationAction := false
@@ -205,8 +203,8 @@ func (s *StatsBlockHandler) preprocessBlock(block *bstream.Block) (interface{}, 
 	return nil, nil
 }
 
-func (s *StatsBlockHandler) handleBlock(block *bstream.Block, obj interface{}) error {
-	blockNum := block.Num()
+func (s *StatsBlockHandler) handleBlock(block *hlog.Block, obj interface{}) error {
+	blockNum := uint64(block.BlockNum())
 	if blockNum > s.stopBlockNum {
 		return io.EOF
 	}

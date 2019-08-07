@@ -109,7 +109,7 @@ var statsRequestValidationRules = validator.Rules{
 // }
 
 func logIntervalInBlock(startBlock, stopBlock uint64) int {
-	delta := int64(startBlock) - int64(stopBlock)
+	delta := int64(stopBlock) - int64(startBlock)
 	if delta < 10000 {
 		return 1000
 	}

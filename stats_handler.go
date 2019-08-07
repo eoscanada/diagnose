@@ -137,6 +137,7 @@ type StatsBlockHandler struct {
 	BlockCount       uint64
 
 	TokenActionCount      uint64
+	TokenNotifCount       uint64
 	TokenTransactionCount uint64
 
 	AccountCreationActionCount      uint64
@@ -154,6 +155,7 @@ type BlockStats struct {
 	TransactionCount uint64
 
 	TokenActionCount      uint64
+	TokenNotifCount       uint64
 	TokenTransactionCount uint64
 
 	AccountCreationActionCount      uint64
@@ -177,10 +179,12 @@ func (s *StatsBlockHandler) preprocessBlock(block *bstream.Block) (interface{}, 
 		for _, action := range trx.AllActions() {
 			stats.ActionCount++
 
+			receiver := action.Receiver()
 			account := action.Account()
 			actionName := action.ActionName()
+			isNotif := receiver != account
 
-			if account == "eosio" && actionName == "newaccount" {
+			if receiver == "eosio" && account == "eosio" && actionName == "newaccount" {
 				stats.AccountCreationActionCount++
 				seenAccountCreationAction = true
 			}
@@ -188,6 +192,10 @@ func (s *StatsBlockHandler) preprocessBlock(block *bstream.Block) (interface{}, 
 			if actionName == "transfer" || actionName == "close" || actionName == "issue" || actionName == "retire" {
 				stats.TokenActionCount++
 				seenTokenTransactionAction = true
+
+				if isNotif {
+					stats.TokenNotifCount++
+				}
 			}
 		}
 
@@ -228,6 +236,7 @@ func (s *StatsBlockHandler) handleBlock(block *bstream.Block, obj interface{}) e
 	s.TransactionCount += stats.TransactionCount
 
 	s.TokenActionCount += stats.TokenActionCount
+	s.TokenNotifCount += stats.TokenNotifCount
 	s.TokenTransactionCount += stats.TokenTransactionCount
 
 	s.AccountCreationActionCount += stats.AccountCreationActionCount
@@ -272,6 +281,7 @@ var statsResultsTemplateContent = `
 
 		<li>Account Creation Action Count: {{ .AccountCreationActionCount }}</li>
 		<li>Token Action Count: {{ .TokenActionCount }}</li>
+		<li>Token Notif Count: {{ .TokenNotifCount }}</li>
 
 		<br>
 

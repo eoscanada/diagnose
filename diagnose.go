@@ -12,11 +12,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/abourget/llerrgroup"
-
 	bt "cloud.google.com/go/bigtable"
-
-	"github.com/eoscanada/bstream/store"
+	"github.com/abourget/llerrgroup"
+	"github.com/eoscanada/dstore"
 	"github.com/eoscanada/eos-go"
 	"github.com/eoscanada/eosdb"
 	"github.com/eoscanada/eosdb/bigtable"
@@ -36,22 +34,26 @@ type Diagnose struct {
 	bigtable  *bigtable.Bigtable
 	eosdb     eosdb.DBReader
 
-	blocksStore store.ArchiveStore
-	searchStore *store.SimpleGStore
+	blocksStore dstore.Store
+	searchStore dstore.Store
 
 	cluster *kubernetes.Clientset
 }
 
 func (d *Diagnose) setupRoutes() {
+	configureValidators()
+
 	r := mux.NewRouter()
 	r.Path("/").Methods("GET").HandlerFunc(d.index)
+	r.Path("/dfuse.css").Methods("GET").HandlerFunc(d.css)
+
+	r.Path("/v1/diagnose/verify_stats").Methods("GET").HandlerFunc(d.verifyStats)
 	r.Path("/v1/diagnose/verify_eosdb_block_holes").Methods("GET").HandlerFunc(d.verifyEOSDBBlockHoles)
 	r.Path("/v1/diagnose/verify_eosdb_trx_problems").Methods("GET").HandlerFunc(d.verifyEOSDBTrxProblems)
 	r.Path("/v1/diagnose/verify_blocks_holes").Methods("GET").HandlerFunc(d.verifyBlocksHoles)
 	r.Path("/v1/diagnose/verify_search_holes").Methods("GET").HandlerFunc(d.verifySearchHoles)
 	r.Path("/v1/diagnose/services_health_checks").Methods("GET").HandlerFunc(d.getServicesHealthChecks)
-	r.Path("/v1/diagnose/").Methods("POST").Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	}))
+	r.Path("/v1/diagnose/").Methods("POST").Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 
 	d.routes = r
 }
@@ -346,33 +348,17 @@ func (d *Diagnose) index(w http.ResponseWriter, r *http.Request) {
 	d.renderTemplate(w, data)
 }
 
+func (d *Diagnose) css(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "dfuse.css")
+}
+
 func (d *Diagnose) Serve() error {
 	zlog.Info("Serving on address", zap.String("addr", d.addr))
 	return http.ListenAndServe(d.addr, d.routes)
 }
 
 func putPreambule(w http.ResponseWriter, title string) {
-	// FIXME: More style to a constant and inject in `d.renderTemplate` data so it's shared between index.html and here
-	style := strings.ReplaceAll(`
-		body {
-			background-color: #f3f3f7;
-			color: #ff4661;
-			margin: 0;
-			padding: 0;
-			font-family: "Open Sans", sans-serif;
-			-webkit-font-smoothing: antialiased;
-			-moz-osx-font-smoothing: grayscale;
-			font-size: 16px;
-			line-height: 1.6;
-			letter-spacing: 0.5px;
-		}
-
-		h3, h4, h5, h6, p {
-			margin: 0.25rem 0;
-		}
-	`, "\n", " ")
-
-	putLine(w, `<html><head><title>%s</title><style>%s</style></head><body><div style="width:90%%; margin: 2rem auto;"><h1>%s</h1>`, title, style, title)
+	putLine(w, `<html><head><title>%s</title><link rel="stylesheet" type="text/css" href="/dfuse.css"></head><body><div style="width:90%%; margin: 2rem auto;"><h1>%s</h1>`, title, title)
 }
 
 func putErrorLine(w http.ResponseWriter, prefix string, err error) {

@@ -11,7 +11,6 @@ import (
 )
 
 type tplData struct {
-
 }
 
 func (d *Diagnose) renderTemplate(w http.ResponseWriter, data *tplData) {
@@ -29,6 +28,7 @@ func (d *Diagnose) renderTemplate(w http.ResponseWriter, data *tplData) {
 			return template.JS(cnt), nil
 		},
 	}).Parse(string(cnt))
+
 	if err != nil {
 		zlog.Fatal("failed parsing template", zap.Error(err))
 		//http.Error(w, fmt.Sprintf("error parsing template: %s", err), 500)

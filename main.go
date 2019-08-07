@@ -3,11 +3,8 @@ package main
 import (
 	"flag"
 
-	"contrib.go.opencensus.io/exporter/stackdriver"
 	"github.com/eoscanada/derr"
-	"github.com/eoscanada/dtracing"
 	"github.com/eoscanada/eos-go"
-	"go.opencensus.io/trace"
 )
 
 var flagNamespace = flag.String("namespace", "default", "k8s namespace inspected by this diagnose instance")
@@ -16,12 +13,6 @@ var flagEOSDB = flag.String("eosdb-connection", "dfuseio-global:dfuse-saas:aca3-
 var flagBlocksStore = flag.String("blocks-store", "gs://dfuseio-global-blocks-us/eos-mainnet/aca3/v2", "Blocks logs storage location")
 var flagSearchIndexesStore = flag.String("search-indexes-store", "gs://dfuseio-global-indices-us/eos-mainnet/aca3-v12", "GS location of search indexes storage")
 var flagSkipK8S = flag.Bool("skip-k8s", false, "Useful in development to avoid setuping access to a K8S cluster")
-
-func init() {
-	options := stackdriver.Options{ProjectID: "dfuse-development-tools"}
-	err := dtracing.RegisterStackDriverExporter("diagnose", trace.ProbabilitySampler(1/20.0), options)
-	derr.ErrorCheck("unable to register stackdriver exporter", err)
-}
 
 func main() {
 	flag.Parse()

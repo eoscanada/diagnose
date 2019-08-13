@@ -69,7 +69,7 @@ func (d *Diagnose) verifyStats(w http.ResponseWriter, r *http.Request) {
 	source := bstream.NewFileSource(
 		d.blocksStore,
 		uint32(startBlockNum),
-		32,
+		int(d.parallelDownloadCount),
 		bstream.PreprocessFunc(stats.preprocessBlock),
 		bstream.HandlerFunc(stats.handleBlock),
 	)

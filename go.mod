@@ -31,6 +31,7 @@ require (
 	github.com/steakknife/bloomfilter v0.0.0-20180922174646-6819c0d2a570 // indirect
 	github.com/steakknife/hamming v0.0.0-20180906055917-c99c65617cd3 // indirect
 	github.com/thedevsaddam/govalidator v1.9.6
+	github.com/tidwall/gjson v1.1.5
 	go.opencensus.io v0.22.0
 	go.uber.org/zap v1.10.0
 	gopkg.in/yaml.v2 v2.2.2 // indirect

@@ -12,15 +12,17 @@ var flagAPIURL = flag.String("api-url", "https://mainnet.eos.dfuse.io", "The EOS
 var flagEOSDB = flag.String("eosdb-connection", "dfuseio-global:dfuse-saas:aca3-v4", "eosdb connection string as 'project:instance:table-prefix'")
 var flagBlocksStore = flag.String("blocks-store", "gs://dfuseio-global-blocks-us/eos-mainnet/aca3/v2", "Blocks logs storage location")
 var flagSearchIndexesStore = flag.String("search-indexes-store", "gs://dfuseio-global-indices-us/eos-mainnet/aca3-v12", "GS location of search indexes storage")
+var flagParallelDownloadCount = flag.Uint64("parallel-download-count", 6, "How many blocks file to download in parallel")
 var flagSkipK8S = flag.Bool("skip-k8s", false, "Useful in development to avoid setuping access to a K8S cluster")
 
 func main() {
 	flag.Parse()
 
 	d := Diagnose{
-		addr:      ":8080",
-		namespace: *flagNamespace,
-		api:       eos.New(*flagAPIURL),
+		addr:                  ":8080",
+		namespace:             *flagNamespace,
+		api:                   eos.New(*flagAPIURL),
+		parallelDownloadCount: *flagParallelDownloadCount,
 	}
 
 	d.setupRoutes()

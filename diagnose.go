@@ -38,6 +38,8 @@ type Diagnose struct {
 	searchStore *store.SimpleGStore
 
 	cluster *kubernetes.Clientset
+
+	parallelDownloadCount uint64
 }
 
 func (d *Diagnose) setupRoutes() {
@@ -48,6 +50,7 @@ func (d *Diagnose) setupRoutes() {
 	r.Path("/dfuse.css").Methods("GET").HandlerFunc(d.css)
 
 	r.Path("/v1/diagnose/verify_stats").Methods("GET").HandlerFunc(d.verifyStats)
+	r.Path("/v1/diagnose/verify_stats_top_accounts").Methods("GET").HandlerFunc(d.verifyStatsTopAccounts)
 	r.Path("/v1/diagnose/verify_eosdb_block_holes").Methods("GET").HandlerFunc(d.verifyEOSDBBlockHoles)
 	r.Path("/v1/diagnose/verify_eosdb_trx_problems").Methods("GET").HandlerFunc(d.verifyEOSDBTrxProblems)
 	r.Path("/v1/diagnose/verify_blocks_holes").Methods("GET").HandlerFunc(d.verifyBlocksHoles)

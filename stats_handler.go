@@ -9,7 +9,8 @@ import (
 	"time"
 
 	"github.com/eoscanada/bstream"
-	"github.com/eoscanada/bstream/hlog"
+	pbbstream "github.com/eoscanada/bstream/pb/dfuse/bstream/v1"
+	pbdeos "github.com/eoscanada/bstream/pb/dfuse/codecs/deos"
 	"github.com/eoscanada/derr"
 	"github.com/eoscanada/dhttp"
 	"github.com/eoscanada/validator"
@@ -67,8 +68,9 @@ func (d *Diagnose) verifyStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	source := bstream.NewFileSource(
+		pbbstream.Protocol_EOS,
 		d.blocksStore,
-		uint32(startBlockNum),
+		startBlockNum,
 		int(d.parallelDownloadCount),
 		bstream.PreprocessFunc(stats.preprocessBlock),
 		bstream.HandlerFunc(stats.handleBlock),
@@ -150,8 +152,8 @@ type StatsBlockHandler struct {
 	logInterval int
 }
 
-func (s *StatsBlockHandler) preprocessBlock(block *hlog.Block) (interface{}, error) {
-	blockNum := uint64(block.BlockNum())
+func (s *StatsBlockHandler) preprocessBlock(block *bstream.Block) (interface{}, error) {
+	blockNum := block.Num()
 	if blockNum < s.startBlockNum || blockNum > s.stopBlockNum {
 		return nil, nil
 	}
@@ -162,17 +164,18 @@ func (s *StatsBlockHandler) preprocessBlock(block *hlog.Block) (interface{}, err
 
 	s.BlockCount++
 
-	for _, trx := range block.AllExecutedTransactionTraces() {
+	blk := block.ToNative().(*pbdeos.Block)
+	for _, trx := range blk.GetTransactionTraces() {
 		s.TransactionCount++
 
 		seenAccountCreationAction := false
 		seenTokenTransactionAction := false
-		for _, action := range trx.AllActions() {
+		for _, action := range trx.ActionTraces {
 			s.ActionCount++
 
-			receiver := action.Receiver()
+			receiver := action.Receiver
 			account := action.Account()
-			actionName := action.ActionName()
+			actionName := action.Name()
 			isNotif := receiver != account
 
 			if receiver == "eosio" && account == "eosio" && actionName == "newaccount" {
@@ -203,8 +206,8 @@ func (s *StatsBlockHandler) preprocessBlock(block *hlog.Block) (interface{}, err
 	return nil, nil
 }
 
-func (s *StatsBlockHandler) handleBlock(block *hlog.Block, obj interface{}) error {
-	blockNum := uint64(block.BlockNum())
+func (s *StatsBlockHandler) handleBlock(block *bstream.Block, obj interface{}) error {
+	blockNum := uint64(block.Num())
 	if blockNum > s.stopBlockNum {
 		return io.EOF
 	}

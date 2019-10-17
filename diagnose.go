@@ -273,7 +273,7 @@ func (d *Diagnose) verifyBlocksHoles(w http.ResponseWriter, r *http.Request) {
 func (d *Diagnose) verifySearchHoles(w http.ResponseWriter, r *http.Request) {
 	putPreambule(w, "Checking holes in Search indexes")
 
-	number := regexp.MustCompile(`.*/(\d+)\.bleve\.tar\.gz`)
+	number := regexp.MustCompile(`.*/(\d+)\.bleve\.tar\.(zst|gz)$`)
 
 	fileList, err := d.searchStore.ListFiles("shards-5000/", math.MaxUint32)
 	if err != nil {

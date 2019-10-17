@@ -14,10 +14,10 @@ import (
 
 	bt "cloud.google.com/go/bigtable"
 	"github.com/abourget/llerrgroup"
-	"github.com/eoscanada/bstream/store"
+	"github.com/eoscanada/dstore"
 	"github.com/eoscanada/eos-go"
-	"github.com/eoscanada/eosdb"
-	"github.com/eoscanada/eosdb/bigtable"
+	"github.com/eoscanada/kvdb"
+	"github.com/eoscanada/kvdb/eosdb"
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,11 +31,10 @@ type Diagnose struct {
 	api *eos.API
 
 	namespace string
-	bigtable  *bigtable.Bigtable
-	eosdb     eosdb.DBReader
+	eosdb     *eosdb.EOSDatabase
 
-	blocksStore store.ArchiveStore
-	searchStore *store.SimpleGStore
+	blocksStore dstore.Store
+	searchStore dstore.Store
 
 	cluster *kubernetes.Clientset
 
@@ -82,15 +81,15 @@ func (d *Diagnose) verifyEOSDBBlockHoles(w http.ResponseWriter, r *http.Request)
 	startTime := time.Now()
 	batchStartTime := time.Now()
 
-	blocksTable := d.bigtable.Blocks
+	blocksTable := d.eosdb.Blocks
 
 	// You can test on a lower range with `bt.NewRange("ff76abbf", "ff76abcf")`
 	err := blocksTable.BaseTable.ReadRows(r.Context(), bt.InfiniteRange(""), func(row bt.Row) bool {
 		count++
 
-		num := int64(math.MaxUint32 - bigtable.BlockNum(row.Key()))
+		num := int64(math.MaxUint32 - kvdb.BlockNum(row.Key()))
 
-		isValid := hasAllColumns(row, blocksTable.ColBlockJSON, blocksTable.ColMetaHeader, blocksTable.ColMetaWritten, blocksTable.ColMetaIrreversible, blocksTable.ColTrxExecutedIDs)
+		isValid := hasAllColumns(row, blocksTable.ColBlock, blocksTable.ColTransactionRefs, blocksTable.ColTransactionTraceRefs, blocksTable.ColMetaWritten, blocksTable.ColMetaIrreversible)
 
 		if !started {
 			previousNum = num + 1
@@ -164,14 +163,14 @@ func (d *Diagnose) verifyEOSDBTrxProblems(w http.ResponseWriter, r *http.Request
 	problemFound := false
 	startTime := time.Now()
 
-	trxsTable := d.bigtable.Transactions
+	trxsTable := d.eosdb.Transactions
 
 	processRowRange := func(rowRange bt.RowSet) error {
 		return trxsTable.BaseTable.ReadRows(r.Context(), rowRange, func(row bt.Row) bool {
 			key := row.Key()
 			trxID := key[0:64]
 			prefixTrxID := trxID[0:8]
-			blockNum := bigtable.BlockNum(key[65:73])
+			blockNum := kvdb.BlockNum(key[65:73])
 
 			count++
 			problemFound = true
@@ -237,7 +236,7 @@ func (d *Diagnose) verifyBlocksHoles(w http.ResponseWriter, r *http.Request) {
 	var holeFound bool
 	var expected uint32
 	var count int
-	err := d.blocksStore.Walk("", func(filename string) error {
+	err := d.blocksStore.Walk("", "", func(filename string) error {
 		match := number.FindStringSubmatch(filename)
 		if match == nil {
 			return nil
@@ -275,7 +274,7 @@ func (d *Diagnose) verifySearchHoles(w http.ResponseWriter, r *http.Request) {
 
 	number := regexp.MustCompile(`.*/(\d+)\.bleve\.tar\.(zst|gz)$`)
 
-	fileList, err := d.searchStore.ListFiles("shards-5000/", math.MaxUint32)
+	fileList, err := d.searchStore.ListFiles("shards-5000/", "", math.MaxUint32)
 	if err != nil {
 		putLine(w, "<pre>Failed walking file list: %s</pre>", err)
 		return
@@ -449,7 +448,7 @@ func createTrxRowSets(concurrentReadCount int) []bt.RowSet {
 		startPrefix = endPrefix
 	}
 
-	// FIXME: Find a way to get up to last possible keys of `a:` set without copying the `prefixSuccessor` method from bigtable
+	// FIXME: Find a way to get up to last possible keys of `a:` set without copying the `prefixSuccessor` method from eosdb
 	//        Hard-coded for now.
 	rowRanges = append(rowRanges, bt.NewRange(startPrefix, strings.Repeat("f", 64)+";"))
 

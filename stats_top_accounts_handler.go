@@ -10,10 +10,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/tidwall/gjson"
-
 	"github.com/eoscanada/bstream"
-	"github.com/eoscanada/bstream/hlog"
+	pbbstream "github.com/eoscanada/bstream/pb/dfuse/bstream/v1"
+	pbdeos "github.com/eoscanada/bstream/pb/dfuse/codecs/deos"
 	"github.com/eoscanada/derr"
 	"github.com/eoscanada/dhttp"
 	"github.com/eoscanada/validator"
@@ -83,8 +82,9 @@ func (d *Diagnose) verifyStatsTopAccounts(w http.ResponseWriter, r *http.Request
 	}
 
 	source := bstream.NewFileSource(
+		pbbstream.Protocol_EOS,
 		d.blocksStore,
-		uint32(startBlockNum),
+		startBlockNum,
 		int(d.parallelDownloadCount),
 		nil,
 		bstream.HandlerFunc(stats.handleBlock),
@@ -155,8 +155,8 @@ type StatsTopAccountsBlockHandler struct {
 	logInterval int
 }
 
-func (s *StatsTopAccountsBlockHandler) handleBlock(block *hlog.Block, obj interface{}) error {
-	blockNum := uint64(block.BlockNum())
+func (s *StatsTopAccountsBlockHandler) handleBlock(block *bstream.Block, obj interface{}) error {
+	blockNum := uint64(block.Num())
 	if blockNum > s.stopBlockNum {
 		return io.EOF
 	}
@@ -185,15 +185,16 @@ func (s *StatsTopAccountsBlockHandler) handleBlock(block *hlog.Block, obj interf
 	return nil
 }
 
-func (s *StatsTopAccountsBlockHandler) accumulateBlockStats(block *hlog.Block) error {
+func (s *StatsTopAccountsBlockHandler) accumulateBlockStats(block *bstream.Block) error {
 	s.BlockCount++
 
-	for _, trx := range block.AllExecutedTransactionTraces() {
+	blk := block.ToNative().(*pbdeos.Block)
+	for _, trx := range blk.GetTransactionTraces() {
 		seenActionsMap := map[string]bool{}
 
-		for _, action := range trx.AllActions() {
-			receiver := string(action.Receiver())
-			topAccountAuthorizer := findAuthorizingTopAccount(action.ActionTrace)
+		for _, action := range trx.ActionTraces {
+			receiver := action.Receiver
+			topAccountAuthorizer := findAuthorizingTopAccount(action)
 
 			if topAccounts[receiver] {
 				seenActionsMap[receiver] = true
@@ -246,8 +247,8 @@ func (s *StatsTopAccountsBlockHandler) recordAccountActivity(account string) {
 	s.ActionCountMap[account] = actionCount
 }
 
-func findAuthorizingTopAccount(actionTrace gjson.Result) string {
-	actors := actionTrace.Get("act.authorization.#.actor")
+func findAuthorizingTopAccount(actionTrace *pbdeos.ActionTrace) string {
+	actors := actionTrace.GetData("act.authorization.#.actor")
 	if !actors.IsArray() {
 		return ""
 	}

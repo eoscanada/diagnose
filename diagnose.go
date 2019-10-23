@@ -18,6 +18,7 @@ import (
 	"github.com/eoscanada/eos-go"
 	"github.com/eoscanada/kvdb"
 	"github.com/eoscanada/kvdb/eosdb"
+	"github.com/eoscanada/kvdb/ethdb"
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,6 +33,7 @@ type Diagnose struct {
 
 	namespace string
 	eosdb     *eosdb.EOSDatabase
+	ethdb     *ethdb.ETHDatabase
 
 	blocksStore dstore.Store
 	searchStore dstore.Store
@@ -51,6 +53,7 @@ func (d *Diagnose) setupRoutes() {
 	r.Path("/v1/diagnose/verify_stats").Methods("GET").HandlerFunc(d.verifyStats)
 	r.Path("/v1/diagnose/verify_stats_top_accounts").Methods("GET").HandlerFunc(d.verifyStatsTopAccounts)
 	r.Path("/v1/diagnose/verify_eosdb_block_holes").Methods("GET").HandlerFunc(d.verifyEOSDBBlockHoles)
+	r.Path("/v1/diagnose/verify_ethdb_block_holes").Methods("GET").HandlerFunc(d.verifyETHBlockHoles)
 	r.Path("/v1/diagnose/verify_eosdb_trx_problems").Methods("GET").HandlerFunc(d.verifyEOSDBTrxProblems)
 	r.Path("/v1/diagnose/verify_blocks_holes").Methods("GET").HandlerFunc(d.verifyBlocksHoles)
 	r.Path("/v1/diagnose/verify_search_holes").Methods("GET").HandlerFunc(d.verifySearchHoles)
@@ -58,6 +61,96 @@ func (d *Diagnose) setupRoutes() {
 	r.Path("/v1/diagnose/").Methods("POST").Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 
 	d.routes = r
+}
+
+var doingETHBBlockHoles bool
+
+func (d *Diagnose) verifyETHBlockHoles(w http.ResponseWriter, r *http.Request) {
+	putPreambule(w, "Checking block holes in ETHDB")
+	if doingETHBBlockHoles {
+		putLine(w, "<h1>Already running, try later</h1>")
+		return
+	}
+
+	doingETHBBlockHoles = true
+	defer func() { doingETHBBlockHoles = false }()
+
+	count := int64(0)
+	holeFound := false
+	started := false
+	previousNum := uint64(0)
+	previousValidNum := uint64(0)
+
+	startTime := time.Now()
+	batchStartTime := time.Now()
+
+	blocksTable := d.ethdb.Blocks
+
+	// You can test on a lower range with `bt.NewRange("ff76abbf", "ff76abcf")`
+	err := blocksTable.BaseTable.ReadRows(r.Context(), bt.InfiniteRange(""), func(row bt.Row) bool {
+		count++
+
+		num, _, e := ethdb.Keys.ReadBlockHash(row.Key())
+		if e != nil {
+			putLine(w, "<p><strong>Error: %s</strong></p>\n", e.Error())
+			return false
+		}
+
+		isValid := hasAllColumns(row, blocksTable.ColHeaderProto, blocksTable.ColMetaIrreversible, blocksTable.ColMetaMapping, blocksTable.ColMetaWritten, blocksTable.ColTrxRefsProto, blocksTable.ColUnclesProto)
+
+		if !started {
+			previousNum = num + 1
+			previousValidNum = num + 1
+			batchStartTime = time.Now()
+
+			putLine(w, "<p><strong>Start block %d</strong></p>\n", num)
+		}
+
+		difference := previousNum - num
+		differenceInvalid := previousValidNum - num
+
+		if difference > 1 && started {
+			holeFound = true
+			putLine(w, "<p><strong>Found block hole: [%d, %d]</strong></p>\n", num+1, previousNum-1)
+		}
+
+		if differenceInvalid > 1 && started && isValid {
+			holeFound = true
+			putLine(w, "<p><strong>Found missing column(s) hole: [%d, %d]</strong></p>\n", num+1, previousValidNum-1)
+		}
+
+		previousNum = num
+		if isValid {
+			previousValidNum = num
+		}
+
+		if count%200000 == 0 {
+			now := time.Now()
+			putLine(w, "<p>200K rows read @ #%d (batch %s, total %s) ...</p>\n", num, now.Sub(batchStartTime), now.Sub(startTime))
+			batchStartTime = time.Now()
+		}
+
+		started = true
+
+		return true
+	}, bt.RowFilter(bt.StripValueFilter()))
+
+	differenceInvalid := previousValidNum - previousNum
+	if differenceInvalid > 1 && started {
+		holeFound = true
+		putLine(w, "<p><strong>Found missing column(s) hole: [%d, %d]</strong></p>\n", previousNum, previousValidNum-1)
+	}
+
+	if err != nil {
+		putLine(w, "<p><strong>Error: %s</strong></p>\n", err.Error())
+		return
+	}
+
+	if !holeFound {
+		putLine(w, "<p><strong>NO HOLE FOUND!</strong></p>\n")
+	}
+
+	putLine(w, "<p><strong>Completed at block num %d (%d blocks seen) in %s</strong></p>\n", previousNum, count, time.Now().Sub(startTime))
 }
 
 var doingEOSDBBlockHoles bool

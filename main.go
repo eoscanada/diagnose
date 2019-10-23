@@ -10,6 +10,7 @@ import (
 var flagNamespace = flag.String("namespace", "default", "k8s namespace inspected by this diagnose instance")
 var flagAPIURL = flag.String("api-url", "https://mainnet.eos.dfuse.io", "The EOSIO API node to reach for information about the chain")
 var flagEOSDB = flag.String("eosdb-connection", "dfuseio-global:dfuse-saas:aca3-v4", "eosdb connection string as 'project:instance:table-prefix'")
+var flagETHDB = flag.String("ethdb-connection", "dfuseio-global:dfuse-saas:ropsten-v2", "ethdb connection string as 'project:instance:table-prefix'")
 var flagBlocksStore = flag.String("blocks-store", "gs://dfuseio-global-blocks-us/eos-mainnet/aca3/v2", "Blocks logs storage location")
 var flagSearchIndexesStore = flag.String("search-indexes-store", "gs://dfuseio-global-indices-us/eos-mainnet/aca3-v12", "GS location of search indexes storage")
 var flagParallelDownloadCount = flag.Uint64("parallel-download-count", 6, "How many blocks file to download in parallel")
@@ -29,20 +30,24 @@ func main() {
 
 	zlog.Info("setting up stores")
 	err := d.setupStores(*flagBlocksStore, *flagSearchIndexesStore)
-	derr.ErrorCheck("failed setting up store", err)
+	derr.Check("failed setting up store", err)
 
 	performK8sSetup := !*flagSkipK8S
 	if performK8sSetup {
 		zlog.Info("setting up k8s clientset")
 		err = d.setupK8s()
-		derr.ErrorCheck("failed setting up k8s", err)
+		derr.Check("failed setting up k8s", err)
 	}
 
 	zlog.Info("setting up eosdb")
 	err = d.setupEOSDB(*flagEOSDB)
-	derr.ErrorCheck("failed setting up bigtable", err)
+	derr.Check("failed setting up bigtable for EOS", err)
+
+	zlog.Info("setting up ethdb")
+	err = d.setupETHDB(*flagETHDB)
+	derr.Check("failed setting up bigtable for ETH", err)
 
 	zlog.Info("serving http")
 	err = d.Serve()
-	derr.ErrorCheck("failed serving http", err)
+	derr.Check("failed serving http", err)
 }

@@ -87,10 +87,10 @@ func (d *Diagnose) verifyETHBlockHoles(w http.ResponseWriter, r *http.Request) {
 	blocksTable := d.ethdb.Blocks
 
 	// You can test on a lower range with `bt.NewRange("ff76abbf", "ff76abcf")`
-	err := blocksTable.BaseTable.ReadRows(r.Context(), bt.InfiniteRange(""), func(row bt.Row) bool {
+	err := blocksTable.BaseTable.ReadRows(r.Context(), bt.InfiniteRange("blkn:"), func(row bt.Row) bool {
 		count++
 
-		num, _, e := ethdb.Keys.ReadBlockHash(row.Key())
+		num, _, e := ethdb.Keys.ReadBlockNum(row.Key())
 		if e != nil {
 			putLine(w, "<p><strong>Error: %s</strong></p>\n", e.Error())
 			return false

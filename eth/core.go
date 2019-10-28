@@ -1,6 +1,7 @@
 package eth
 
 import (
+	"fmt"
 	"math"
 	"net/http"
 	"regexp"
@@ -181,7 +182,8 @@ func (e *ETHDiagnose) searchHoles(w http.ResponseWriter, r *http.Request) {
 
 	number := regexp.MustCompile(`.*/(\d+)\.bleve\.tar\.(zst|gz)$`)
 
-	fileList, err := e.SearchStore.ListFiles("shards-200/", "", math.MaxUint32)
+	shardPrefix := fmt.Sprintf("shards-%s/", e.SearchShardSize)
+	fileList, err := e.SearchStore.ListFiles(shardPrefix, "", math.MaxUint32)
 	if err != nil {
 		renderer.PutLine(w, "<pre>Failed walking file list: %s</pre>", err)
 		return

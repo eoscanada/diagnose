@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/eoscanada/derr"
 	"github.com/eoscanada/diagnose/eos"
 	"github.com/eoscanada/diagnose/eth"
 	"github.com/eoscanada/diagnose/renderer"
@@ -15,4 +16,5 @@ func setupLogger() {
 	eos.SetLogger(zlog)
 	eth.SetLogger(zlog)
 	renderer.SetLogger(zlog)
+	derr.SetLogger(zlog)
 }

@@ -31,22 +31,27 @@ var processingSearchHoles bool
 type EOSDiagnose struct {
 	Namespace string
 
-	SearchShardSize string
+	BlocksStoreUrl        string
+	SearchIndexesStoreUrl string
+	SearchShardSize       uint32
+	KvdbConnection        string
 
 	BlocksStore dstore.Store
 	SearchStore dstore.Store
 
-	EOSdb *eosdb.EOSDatabase
+	EOSdb                 *eosdb.EOSDatabase
+	ParallelDownloadCount uint64
 }
-
-//<Trx id="asd,jfhgsafhjasdf" />
 
 func (e *EOSDiagnose) SetupRoutes(s *mux.Router) {
 
 	s.Path("/trx_problems").Methods("GET").HandlerFunc(e.trxProblems)
 	s.Path("/block_holes").Methods("GET").HandlerFunc(e.blockHoles)
-	s.Path("/block_holes").Methods("GET").HandlerFunc(e.dbHoles)
+	s.Path("/db_holes").Methods("GET").HandlerFunc(e.dbHoles)
 	s.Path("/search_holes").Methods("GET").HandlerFunc(e.searchHoles)
+	s.Path("/verify_stats").Methods("GET").HandlerFunc(e.verifyStats)
+	s.Path("/verify_stats_top_accounts").Methods("GET").HandlerFunc(e.verifyStatsTopAccounts)
+
 }
 
 func (e *EOSDiagnose) trxProblems(w http.ResponseWriter, r *http.Request) {
@@ -126,6 +131,7 @@ func (e *EOSDiagnose) blockHoles(w http.ResponseWriter, r *http.Request) {
 		renderer.PutLine(w, "<h1>Already running, try later</h1>")
 		return
 	}
+	renderer.PutLine(w, "<p>Block Store: %s</p>\n", e.BlocksStoreUrl)
 
 	processingBlockHoles = true
 	defer func() { processingBlockHoles = false }()
@@ -151,7 +157,7 @@ func (e *EOSDiagnose) blockHoles(w http.ResponseWriter, r *http.Request) {
 		expected = baseNum32 + 100
 
 		if count%10000 == 0 {
-			renderer.PutLine(w, "<p>%s...</p>\n", filename)
+			renderer.PutLine(w, "<p>checking @ %s...</p>\n", filename)
 		}
 
 		return nil
@@ -174,6 +180,7 @@ func (e *EOSDiagnose) dbHoles(w http.ResponseWriter, r *http.Request) {
 		renderer.PutLine(w, "<h1>Already running, try later</h1>")
 		return
 	}
+	renderer.PutLine(w, "<p>Bigtable: %s</p>\n", e.KvdbConnection)
 
 	processingDbHoles = true
 	defer func() { processingDbHoles = false }()
@@ -258,34 +265,43 @@ func (e *EOSDiagnose) searchHoles(w http.ResponseWriter, r *http.Request) {
 		renderer.PutLine(w, "<h1>Already running, try later</h1>")
 		return
 	}
+	renderer.PutLine(w, "<p>Search Store: %s, Shard Size: %d</p>\n", e.SearchIndexesStoreUrl, e.SearchShardSize)
 
 	processingSearchHoles = true
 	defer func() { processingSearchHoles = false }()
 
 	number := regexp.MustCompile(`.*/(\d+)\.bleve\.tar\.(zst|gz)$`)
 
-	shardPrefix := fmt.Sprintf("shards-%s/", e.SearchShardSize)
-	fileList, err := e.SearchStore.ListFiles(shardPrefix, "", math.MaxUint32)
-	if err != nil {
-		renderer.PutLine(w, "<pre>Failed walking file list: %s</pre>", err)
-		return
-	}
-
 	var holeFound bool
 	var expected uint32
-	for _, filename := range fileList {
+	var count int
+	shardPrefix := fmt.Sprintf("shards-%d/", e.SearchShardSize)
+
+	err := e.SearchStore.Walk(shardPrefix, "", func(filename string) error {
 		match := number.FindStringSubmatch(filename)
 		if match == nil {
-			continue
+			return nil
 		}
 
+		count++
 		baseNum, _ := strconv.ParseUint(match[1], 10, 32)
 		baseNum32 := uint32(baseNum)
 		if baseNum32 != expected {
 			holeFound = true
 			renderer.PutLine(w, "<p><strong>HOLE FOUND: %d - %d</strong></p>\n", expected, baseNum)
 		}
-		expected = baseNum32 + 200
+		expected = baseNum32 + e.SearchShardSize
+
+		if count%1000 == 0 {
+			renderer.PutLine(w, "<p>checking @ %s...</p>\n", filename)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		renderer.PutLine(w, "<pre>Failed walking file list: %s</pre>\n", err)
+		return
 	}
 
 	if !holeFound {

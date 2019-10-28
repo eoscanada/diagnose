@@ -1,4 +1,4 @@
-package main
+package eos
 
 import (
 	"fmt"
@@ -27,13 +27,13 @@ func init() {
 	var err error
 
 	statsTemplate, err = template.New("stats").Parse(statsTemplateContent)
-	derr.ErrorCheck("unable to create template stats", err)
+	derr.Check("unable to create template stats", err)
 
 	statsResultTemplate, err = template.New("stats_results").Parse(statsResultsTemplateContent)
-	derr.ErrorCheck("unable to create template stats_results", err)
+	derr.Check("unable to create template stats_results", err)
 }
 
-func (d *Diagnose) verifyStats(w http.ResponseWriter, r *http.Request) {
+func (e *EOSDiagnose) verifyStats(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	if doingStats {
 		dhttp.WriteHTML(ctx, w, alreadyRunningTemplate, nil)
@@ -71,9 +71,9 @@ func (d *Diagnose) verifyStats(w http.ResponseWriter, r *http.Request) {
 
 	source := bstream.NewFileSource(
 		pbbstream.Protocol_EOS,
-		d.BlocksStore,
+		e.BlocksStore,
 		startBlockNum,
-		int(d.ParallelDownloadCount),
+		int(e.ParallelDownloadCount),
 		bstream.PreprocessFunc(stats.preprocessBlock),
 		bstream.HandlerFunc(stats.handleBlock),
 	)

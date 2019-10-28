@@ -7,10 +7,13 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/gorilla/mux"
+
 	"go.uber.org/zap"
 )
 
 type tplData struct {
+	Router             *mux.Router
 	Protocol           string
 	Namespace          string
 	BlockStore         string
@@ -32,6 +35,12 @@ func (d *Diagnose) renderTemplate(w http.ResponseWriter, data *tplData) {
 			}
 			return template.JS(cnt), nil
 		},
+		"isEOS": func(protocol string) bool {
+			return true
+		},
+		"isETH": func(protocol string) bool {
+			return false
+		},
 	}).Parse(string(cnt))
 
 	if err != nil {
@@ -45,4 +54,12 @@ func (d *Diagnose) renderTemplate(w http.ResponseWriter, data *tplData) {
 	if err != nil {
 		http.Error(w, fmt.Sprintf("error processing template: %s", err), 500)
 	}
+}
+
+func (t *tplData) IsEOS() bool {
+	return t.Protocol == "EOS"
+}
+
+func (t *tplData) IsETH() bool {
+	return t.Protocol == "ETH"
 }

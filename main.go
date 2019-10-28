@@ -8,25 +8,43 @@ import (
 	"github.com/eoscanada/eos-go"
 )
 
+//var flagHttpListenAddr = flag.String("listen-http-addr", ":8080", "TCP Listener addr for http")
+//
+//var flagProtocol = flag.String("protocol", "ETH", "Protocol to load, EOS or ETH")
+//var flagNamespace = flag.String("namespace", "eth-ropsten", "k8s namespace inspected by this diagnose instance")
+//
+//var flagBlocksStore = flag.String("blocks-store", "gs://dfuseio-global-blocks-us/eth-ropsten/v2", "Blocks logs storage location")
+//
+//var flagSearchIndexesStore = flag.String("search-indexes-store", "gs://dfuseio-global-indices-us/eth-ropsten/v2", "GS location of search indexes storage for EOS")
+//var flagSearchShardSize = flag.Uint("search-shard-size", 200, "Number of blocks to store in a given Bleve index")
+//
+//var flagDB = flag.String("db-connection", "dfuseio-global:dfuse-saas:ropsten-v2", "Big table connection string as 'project:instance:table-prefix'")
+//
+//var flagAPIURL = flag.String("api-url", "https://ropsten.eth.dfuse.io", "The API node to reach for information about the chain")
+//
+//var flagParallelDownloadCount = flag.Uint64("parallel-download-count", 6, "How many blocks file to download in parallel")
+//var flagSkipK8S = flag.Bool("skip-k8s", false, "Useful in development to avoid setuping access to a K8S cluster")
+
 var flagHttpListenAddr = flag.String("listen-http-addr", ":8080", "TCP Listener addr for http")
 
-var flagProtocol = flag.String("protocol", "ETH", "Protocol to load, EOS or ETH")
-var flagNamespace = flag.String("namespace", "eth-ropsten", "k8s namespace inspected by this diagnose instance")
+var flagProtocol = flag.String("protocol", "EOS", "Protocol to load, EOS or ETH")
+var flagNamespace = flag.String("namespace", "eos-kylin", "k8s namespace inspected by this diagnose instance")
 
-var flagBlocksStore = flag.String("blocks-store", "gs://dfuseio-global-blocks-us/eth-ropsten/v2", "Blocks logs storage location")
+var flagBlocksStore = flag.String("blocks-store", "gs://dfuseio-global-blocks-us/eos-kylin/v3", "Blocks logs storage location")
 
-var flagSearchIndexesStore = flag.String("search-indexes-store", "gs://dfuseio-global-indices-us/eth-ropsten/v2", "GS location of search indexes storage for EOS")
-var flagSearchShardSize = flag.String("search-shard-size", "200", "Number of blocks to store in a given Bleve index")
+var flagSearchIndexesStore = flag.String("search-indexes-store", "gs://dfuseio-global-indices-us/eos-kylin/v2-1", "GS location of search indexes storage for EOS")
+var flagSearchShardSize = flag.Uint("search-shard-size", 5000, "Number of blocks to store in a given Bleve index")
 
-var flagDB = flag.String("db-connection", "dfuseio-global:dfuse-saas:eth-ropsten", "Big table connection string as 'project:instance:table-prefix'")
+var flagDB = flag.String("db-connection", "dfuseio-global:dfuse-saas:5fff-v5", "Big table connection string as 'project:instance:table-prefix'")
 
-var flagAPIURL = flag.String("api-url", "https://ropsten.eth.dfuse.io", "The API node to reach for information about the chain")
+var flagAPIURL = flag.String("api-url", "https://kylin.eos.dfuse.io", "The API node to reach for information about the chain")
 
 var flagParallelDownloadCount = flag.Uint64("parallel-download-count", 6, "How many blocks file to download in parallel")
 var flagSkipK8S = flag.Bool("skip-k8s", false, "Useful in development to avoid setuping access to a K8S cluster")
 
 func main() {
 	flag.Parse()
+	setupLogger()
 
 	d := Diagnose{
 		Addr:                  *flagHttpListenAddr,
@@ -34,13 +52,11 @@ func main() {
 		Protocol:              *flagProtocol,
 		Api:                   eos.New(*flagAPIURL),
 		ParallelDownloadCount: *flagParallelDownloadCount,
-		BlockStore:            *flagBlocksStore,
-		SearchIndexesStore:    *flagSearchIndexesStore,
-		SearchShardSize:       *flagSearchShardSize,
-		KvdbConnection:        "",
+		BlockStoreUrl:         *flagBlocksStore,
+		SearchIndexesStoreUrl: *flagSearchIndexesStore,
+		SearchShardSize:       uint32(*flagSearchShardSize),
+		KvdbConnection:        *flagDB,
 	}
-
-	d.SetupRoutes()
 
 	zlog.Info("setting up stores")
 	err := d.SetupStores(*flagBlocksStore, *flagSearchIndexesStore)
@@ -56,6 +72,8 @@ func main() {
 	zlog.Info("setting up kvdb")
 	err = d.SetupDB(*flagDB, *flagProtocol)
 	derr.Check(fmt.Sprintf("failed setting up bigtable for %s", *flagProtocol), err)
+
+	d.SetupRoutes()
 
 	zlog.Info("serving http")
 	err = d.Serve()

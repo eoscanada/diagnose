@@ -1,4 +1,4 @@
-package main
+package eos
 
 import (
 	"fmt"
@@ -35,7 +35,7 @@ func init() {
 	derr.ErrorCheck("unable to create template stats_results", err)
 }
 
-func (d *Diagnose) verifyStatsTopAccounts(w http.ResponseWriter, r *http.Request) {
+func (e *EOSDiagnose) verifyStatsTopAccounts(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	if doingStatsTopAccounts {
 		dhttp.WriteHTML(ctx, w, alreadyRunningTemplate, nil)
@@ -85,9 +85,9 @@ func (d *Diagnose) verifyStatsTopAccounts(w http.ResponseWriter, r *http.Request
 
 	source := bstream.NewFileSource(
 		pbbstream.Protocol_EOS,
-		d.BlocksStore,
+		e.BlocksStore,
 		startBlockNum,
-		int(d.ParallelDownloadCount),
+		int(e.ParallelDownloadCount),
 		nil,
 		bstream.HandlerFunc(stats.handleBlock),
 	)

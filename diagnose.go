@@ -25,12 +25,12 @@ type Diagnose struct {
 
 	Api *eos.API
 
-	Namespace          string
-	Protocol           string
-	BlockStore         string
-	SearchIndexesStore string
-	SearchShardSize    string
-	KvdbConnection     string
+	Namespace             string
+	Protocol              string
+	BlockStoreUrl         string
+	SearchIndexesStoreUrl string
+	SearchShardSize       uint32
+	KvdbConnection        string
 
 	BlocksStore dstore.Store
 	SearchStore dstore.Store
@@ -53,34 +53,38 @@ func (d *Diagnose) SetupRoutes() {
 	switch d.Protocol {
 	case "EOS":
 		eosDiagnose := &eosd.EOSDiagnose{
-			Namespace:       d.Namespace,
-			SearchShardSize: d.SearchShardSize,
-			BlocksStore:     d.BlocksStore,
-			SearchStore:     d.SearchStore,
-			EOSdb:           d.EOSdb,
+			Namespace:             d.Namespace,
+			BlocksStoreUrl:        d.BlockStoreUrl,
+			SearchIndexesStoreUrl: d.SearchIndexesStoreUrl,
+			SearchShardSize:       d.SearchShardSize,
+			KvdbConnection:        d.KvdbConnection,
+			BlocksStore:           d.BlocksStore,
+			SearchStore:           d.SearchStore,
+			EOSdb:                 d.EOSdb,
+			ParallelDownloadCount: d.ParallelDownloadCount,
 		}
-		s := r.PathPrefix("/EOS").Subrouter()
+		s := r.PathPrefix("/v1/EOS").Subrouter()
 		eosDiagnose.SetupRoutes(s)
 
 	case "ETH":
 		ethDiagnose := &ethd.ETHDiagnose{
-			Namespace:       d.Namespace,
-			SearchShardSize: d.SearchShardSize,
-			BlocksStore:     d.BlocksStore,
-			SearchStore:     d.SearchStore,
-			ETHdb:           d.ETHdb,
+			Namespace:             d.Namespace,
+			BlocksStoreUrl:        d.BlockStoreUrl,
+			SearchIndexesStoreUrl: d.SearchIndexesStoreUrl,
+			SearchShardSize:       d.SearchShardSize,
+			KvdbConnection:        d.KvdbConnection,
+			BlocksStore:           d.BlocksStore,
+			SearchStore:           d.SearchStore,
+			ETHdb:                 d.ETHdb,
 		}
-		s := r.PathPrefix("/ETH").Subrouter()
+		s := r.PathPrefix("/v1/ETH").Subrouter()
 		ethDiagnose.SetupRoutes(s)
 
 	}
 
 	r.Path("/v1/diagnose/services_health_checks").Methods("GET").HandlerFunc(d.getServicesHealthChecks)
-	r.Path("/v1/diagnose/verify_stats").Methods("GET").HandlerFunc(d.verifyStats)
-	r.Path("/v1/diagnose/verify_stats_top_accounts").Methods("GET").HandlerFunc(d.verifyStatsTopAccounts)
 	r.Path("/v1/diagnose/").Methods("POST").Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 
-	r.Path("/v1/diagnose/").Methods("POST").Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	d.routes = r
 }
 
@@ -126,10 +130,11 @@ func (d *Diagnose) getServicesHealthChecks(w http.ResponseWriter, r *http.Reques
 
 func (d *Diagnose) index(w http.ResponseWriter, r *http.Request) {
 	data := &tplData{
-		Protocol:           "ETH",
+		Router:             d.routes,
+		Protocol:           d.Protocol,
 		Namespace:          d.Namespace,
-		BlockStore:         d.BlockStore,
-		SearchIndexesStore: d.SearchIndexesStore,
+		BlockStore:         d.BlockStoreUrl,
+		SearchIndexesStore: d.SearchIndexesStoreUrl,
 		KVDBConnection:     d.KvdbConnection,
 	}
 

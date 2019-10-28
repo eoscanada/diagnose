@@ -4,8 +4,6 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/eoscanada/diagnose/diagnose"
-
 	"github.com/eoscanada/derr"
 	"github.com/eoscanada/eos-go"
 )
@@ -30,7 +28,7 @@ var flagSkipK8S = flag.Bool("skip-k8s", false, "Useful in development to avoid s
 func main() {
 	flag.Parse()
 
-	d := diagnose.Diagnose{
+	d := Diagnose{
 		Addr:                  *flagHttpListenAddr,
 		Namespace:             *flagNamespace,
 		Protocol:              *flagProtocol,
@@ -57,7 +55,7 @@ func main() {
 
 	zlog.Info("setting up kvdb")
 	err = d.SetupDB(*flagDB, *flagProtocol)
-	derr.Check(fmt.Sprint("failed setting up bigtable for %s", *flagProtocol), err)
+	derr.Check(fmt.Sprintf("failed setting up bigtable for %s", *flagProtocol), err)
 
 	zlog.Info("serving http")
 	err = d.Serve()

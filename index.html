@@ -1,0 +1,56 @@
+<html>
+<head>
+    <title>dfuse diagnose</title>
+    <link rel="stylesheet" type="text/css" href="/dfuse.css">
+</head>
+<body>
+<div style="width:90%; margin: 2rem auto;">
+    <h2>{{ .Protocol }} [{{ .Namespace }}] - Diagnosis </h2>
+    <ul>
+        <li>
+            <a href="/ETH/block_holes" target="_blank">
+                Verify holes in Blocks logs - <small>{{ .BlockStore }}</small>
+            </a>
+        </li>
+        <li>
+            <a href="/v1/diagnose/verify_ethdb_block_holes" target="_blank">
+                Verify holes in Search Indices - <small>{{ .SearchIndexesStore }}</small>
+            </a>
+        </li>
+        <li>
+            <a href="/v1/diagnose/verify_ethdb_block_holes" target="_blank">
+                Verify holes in {{ .Protocol }} DB  - <small>{{ .SearchIndexesStore }}</small>
+            </a>
+        </li>
+    </ul>
+    <hr/>
+    <h2>{{ .Protocol }} Diagnosis </h2>
+    <ul>
+        <li><a href="/v1/diagnose/verify_ethdb_block_holes" target="_blank">Verify block holes in ETH DB</a></li>
+        <li><a href="/v1/diagnose/eth/verify_search_holes" target="_blank">Verify search indices holes in GS</a></li>
+    </ul>
+    <ul>
+        <li><a href="/v1/diagnose/verify_blocks_holes" target="_blank">Verify holes in Blocks logs</a></li>
+    </ul>
+    <h2>EOS diagnosis</h2>
+
+    <ul>
+        <li><a href="/v1/diagnose/verify_stats" target="_blank">Verify Stats (Chain Activity)</a></li>
+        <li><a href="/v1/diagnose/verify_stats_top_accounts" target="_blank">Verify Stats (Top Accounts)</a></li>
+        <li><a href="/v1/diagnose/verify_eosdb_block_holes" target="_blank">Verify block holes in EOS DB</a></li>
+        <li><a href="/v1/diagnose/verify_eosdb_trx_problems" target="_blank">Verify transaction problems in EOS DB</a>
+        </li>
+        <li><a href="/v1/diagnose/verify_search_holes" target="_blank">Verify holes in Search indexes</a></li>
+        <li><a href="/v1/diagnose/services_health_checks" target="_blank">All services's endpoints health checks</a>
+        </li>
+    </ul>
+
+{{/*    <h2>ETH diagnosis</h2>*/}}
+{{/*    <ul>*/}}
+{{/*        <li><a href="/v1/diagnose/verify_ethdb_block_holes" target="_blank">Verify block holes in ETH DB</a></li>*/}}
+{{/*        <li><a href="/v1/diagnose/eth/verify_search_holes" target="_blank">Verify search indices holes in GS</a></li>*/}}
+{{/*    </ul>*/}}
+
+</div>
+</body>
+</html>

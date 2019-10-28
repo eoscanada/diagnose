@@ -10,10 +10,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/eoscanada/kvdb/eosdb"
+
+	"github.com/eoscanada/diagnose/utils"
+	"github.com/eoscanada/dstore"
+
 	"github.com/abourget/llerrgroup"
 
 	bt "cloud.google.com/go/bigtable"
-	"github.com/eoscanada/diagnose/diagnose"
 	"github.com/eoscanada/diagnose/renderer"
 	"github.com/eoscanada/kvdb"
 	"github.com/gorilla/mux"
@@ -25,8 +29,17 @@ var processingDbHoles bool
 var processingSearchHoles bool
 
 type EOSDiagnose struct {
-	*diagnose.Diagnose
+	Namespace string
+
+	SearchShardSize string
+
+	BlocksStore dstore.Store
+	SearchStore dstore.Store
+
+	EOSdb *eosdb.EOSDatabase
 }
+
+//<Trx id="asd,jfhgsafhjasdf" />
 
 func (e *EOSDiagnose) SetupRoutes(s *mux.Router) {
 
@@ -182,7 +195,7 @@ func (e *EOSDiagnose) dbHoles(w http.ResponseWriter, r *http.Request) {
 
 		num := int64(math.MaxUint32 - kvdb.BlockNum(row.Key()))
 
-		isValid := diagnose.HasAllColumns(row, blocksTable.ColBlock, blocksTable.ColTransactionRefs, blocksTable.ColTransactionTraceRefs, blocksTable.ColMetaWritten, blocksTable.ColMetaIrreversible)
+		isValid := utils.HasAllColumns(row, blocksTable.ColBlock, blocksTable.ColTransactionRefs, blocksTable.ColTransactionTraceRefs, blocksTable.ColMetaWritten, blocksTable.ColMetaIrreversible)
 
 		if !started {
 			previousNum = num + 1

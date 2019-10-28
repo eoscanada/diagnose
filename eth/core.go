@@ -8,11 +8,13 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/eoscanada/diagnose/utils"
+
+	"github.com/eoscanada/dstore"
+
 	"github.com/eoscanada/diagnose/renderer"
 
 	bt "cloud.google.com/go/bigtable"
-
-	"github.com/eoscanada/diagnose/diagnose"
 
 	"github.com/eoscanada/kvdb/ethdb"
 
@@ -24,7 +26,14 @@ var processingDBHoles bool
 var processingSearchHoles bool
 
 type ETHDiagnose struct {
-	*diagnose.Diagnose
+	Namespace string
+
+	SearchShardSize string
+
+	BlocksStore dstore.Store
+	SearchStore dstore.Store
+
+	ETHdb *ethdb.ETHDatabase
 }
 
 func (e *ETHDiagnose) SetupRoutes(s *mux.Router) {
@@ -113,7 +122,7 @@ func (e *ETHDiagnose) dbHoles(w http.ResponseWriter, r *http.Request) {
 			return false
 		}
 
-		isValid := diagnose.HasAllColumns(row, blocksTable.ColHeaderProto, blocksTable.ColMetaIrreversible, blocksTable.ColMetaMapping, blocksTable.ColMetaWritten, blocksTable.ColTrxRefsProto, blocksTable.ColUnclesProto)
+		isValid := utils.HasAllColumns(row, blocksTable.ColHeaderProto, blocksTable.ColMetaIrreversible, blocksTable.ColMetaMapping, blocksTable.ColMetaWritten, blocksTable.ColTrxRefsProto, blocksTable.ColUnclesProto)
 
 		if !started {
 			previousNum = num + 1

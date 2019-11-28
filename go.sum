@@ -27,6 +27,8 @@ git.apache.org/thrift.git v0.0.0-20181218151757-9b75e4fe745a/go.mod h1:fPE2ZNJGy
 git.apache.org/thrift.git v0.12.0/go.mod h1:fPE2ZNJGynbRyZ4dJvy6G277gSllfV2HJqblrnkyeyg=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
+github.com/DataDog/zstd v1.4.1 h1:3oxKN3wbHibqx897utPC2LTQU4J+IHWWJO+glkAkpFM=
+github.com/DataDog/zstd v1.4.1/go.mod h1:1jcaCB/ufaK+sKp1NBhlGmpz41jOoPQ35bpF36t7BBo=
 github.com/Shopify/sarama v1.19.0/go.mod h1:FVkBWblsNy7DGZRfXLU0O9RCGt5g3g3yEuWXgklEdEo=
 github.com/Shopify/sarama v1.20.1/go.mod h1:FVkBWblsNy7DGZRfXLU0O9RCGt5g3g3yEuWXgklEdEo=
 github.com/Shopify/toxiproxy v2.1.4+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMxUHB2q5Ap20/P/eIdh4G0pI=
@@ -44,6 +46,7 @@ github.com/aws/aws-sdk-go v1.16.26/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpi
 github.com/aws/aws-sdk-go v1.16.29/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/aws/aws-sdk-go v1.22.1 h1://WJvJi9iq/i5TWHuK3hIC23xCZYH7Qv7SIN2vZVqxY=
 github.com/aws/aws-sdk-go v1.22.1/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
+github.com/aws/aws-sdk-go v1.25.43/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=
 github.com/beorn7/perks v1.0.0/go.mod h1:KWe93zE9D1o94FZ5RNwFwVgaQK1VOXiVxmqh+CedLV8=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
@@ -81,6 +84,9 @@ github.com/eoscanada/dhttp v0.0.2-0.20190807044304-212195313a5b h1:pwILf8Jr8gyBZ
 github.com/eoscanada/dhttp v0.0.2-0.20190807044304-212195313a5b/go.mod h1:qNcKQnqvu15V4T6CTDymMInRo3srE5xIKo5aptWaiBU=
 github.com/eoscanada/dstore v0.0.7 h1:lp4lt74XKmkvwdzK2q/uaW4yUDOqRx6xK2ryWPCrAg8=
 github.com/eoscanada/dstore v0.0.7/go.mod h1:CMbeeScw018/QUHw+b7FPUF1FS2zxhrxux8SDP6LRvo=
+github.com/eoscanada/dstore v0.1.4 h1:X6isFq/cdNyojMYT2WGCRpzoaYq7eXHzt5PauZDBZ2A=
+github.com/eoscanada/dstore v0.1.4/go.mod h1:cxOi4tsug89eNA9MbPgtwwNlynDOXg6h1AmlChz3kQ0=
+github.com/eoscanada/dstore v0.1.5-0.20191127183911-6fb75e5ddc53/go.mod h1:Z4GrTm00amci4R3QoY9H28EN0vPo+4/rQ4lTeUEZtgo=
 github.com/eoscanada/dtracing v0.3.1/go.mod h1:0/tp/EgJSewdXryeoUSYYy2BXOKc+u5b5Rt8NkHhkw4=
 github.com/eoscanada/dtracing v0.4.2 h1:GGN7JOPZ/M2zKr/AUqH6HeB67sRI7ktDwPUxf4B6Dkw=
 github.com/eoscanada/dtracing v0.4.2/go.mod h1:kKPDZqI+9M8YGMXhUZcFAzmiKrjgQan/U0+PgtCIISc=
@@ -215,6 +221,7 @@ github.com/jtolds/gls v4.2.1+incompatible/go.mod h1:QJZ7F/aHp+rZTRtaJ1ow/lLfFfVY
 github.com/julienschmidt/httprouter v1.2.0/go.mod h1:SYymIcj16QtmaHHD7aYtjjsJG7VTCxuUUipMqKk8s4w=
 github.com/kisielk/errcheck v1.1.0/go.mod h1:EZBBE59ingxPouuu3KfxchcWSUPOHkagtvWXihfKN4Q=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
+github.com/klauspost/compress v1.7.4/go.mod h1:RyIbtBH6LamlWaDj8nUwkbUhJ87Yi3uG0guNDohfE1A=
 github.com/klauspost/compress v1.8.5 h1:2ucYeik+NtUTg+IAiNQtoFC5ZGs5mIVidI7Ome0Br3Y=
 github.com/klauspost/compress v1.8.5/go.mod h1:RyIbtBH6LamlWaDj8nUwkbUhJ87Yi3uG0guNDohfE1A=
 github.com/klauspost/cpuid v1.2.1 h1:vJi+O/nMdFt0vqm8NZBI6wzALWdA2X+egi0ogNyrC/w=

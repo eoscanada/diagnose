@@ -6,7 +6,7 @@ require (
 	github.com/eoscanada/bstream v1.6.3-0.20191022175107-e8fa0d989204
 	github.com/eoscanada/derr v0.3.8
 	github.com/eoscanada/dhttp v0.0.2-0.20190807044304-212195313a5b
-	github.com/eoscanada/dstore v0.0.7
+	github.com/eoscanada/dstore v0.1.4
 	github.com/eoscanada/dtracing v0.4.2
 	github.com/eoscanada/eos-go v0.8.17-0.20191009185653-116355dee341
 	github.com/eoscanada/kvdb v0.0.12-0.20191022185346-6acf521538e1
@@ -14,8 +14,6 @@ require (
 	github.com/eoscanada/validator v0.4.1-0.20190807042112-8fbbe313c8e8
 	github.com/googleapis/gnostic v0.2.0 // indirect
 	github.com/gorilla/mux v1.7.0
-	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
-	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/thedevsaddam/govalidator v1.9.6

@@ -21,7 +21,7 @@ type tplData struct {
 	KVDBConnection     string
 }
 
-func (d *Diagnose) renderTemplate(w http.ResponseWriter, data *tplData) {
+func (d *RootServer) renderTemplate(w http.ResponseWriter, data *tplData) {
 	cnt, err := ioutil.ReadFile("index.html")
 	if err != nil {
 		zlog.Fatal("failed reading index.html", zap.Error(err))

@@ -35,7 +35,7 @@ func init() {
 	derr.ErrorCheck("unable to create template stats_results", err)
 }
 
-func (e *EOSDiagnose) verifyStatsTopAccounts(w http.ResponseWriter, r *http.Request) {
+func (e *Diagnose) verifyStatsTopAccounts(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	if doingStatsTopAccounts {
 		dhttp.WriteHTML(ctx, w, alreadyRunningTemplate, nil)

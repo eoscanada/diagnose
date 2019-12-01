@@ -33,7 +33,7 @@ func init() {
 	derr.Check("unable to create template stats_results", err)
 }
 
-func (e *EOSDiagnose) verifyStats(w http.ResponseWriter, r *http.Request) {
+func (e *Diagnose) verifyStats(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	if doingStats {
 		dhttp.WriteHTML(ctx, w, alreadyRunningTemplate, nil)

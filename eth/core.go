@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/eoscanada/diagnose/utils"
+	"github.com/gorilla/websocket"
 
 	"github.com/eoscanada/dstore"
 
@@ -24,13 +25,14 @@ var processingBlockHoles bool
 var processingDBHoles bool
 var processingSearchHoles bool
 
-type ETHDiagnose struct {
+type Diagnose struct {
 	Namespace string
 
 	BlocksStoreUrl        string
 	SearchIndexesStoreUrl string
 	SearchShardSize       uint32
-	KvdbConnection        string
+	KvdbConnectionInfo    string
+	upgrader              *websocket.Upgrader
 
 	BlocksStore dstore.Store
 	SearchStore dstore.Store
@@ -38,14 +40,18 @@ type ETHDiagnose struct {
 	ETHdb *ethdb.ETHDatabase
 }
 
-func (e *ETHDiagnose) SetupRoutes(s *mux.Router) {
-
-	s.Path("/block_holes").Methods("GET").HandlerFunc(e.blockHoles)
-	s.Path("/db_holes").Methods("GET").HandlerFunc(e.dbHoles)
-	s.Path("/search_holes").Methods("GET").HandlerFunc(e.searchHoles)
+func (e *Diagnose) SetUpgrader(upgrader *websocket.Upgrader) {
+	e.upgrader = upgrader
 }
 
-func (e *ETHDiagnose) blockHoles(w http.ResponseWriter, r *http.Request) {
+func (e *Diagnose) SetupRoutes(s *mux.Router) {
+
+	s.Path("/block_holes").Methods("GET").HandlerFunc(e.BlockHoles)
+	s.Path("/db_holes").Methods("GET").HandlerFunc(e.DBHoles)
+	s.Path("/search_holes").Methods("GET").HandlerFunc(e.SearchHoles)
+}
+
+func (e *Diagnose) BlockHoles(w http.ResponseWriter, r *http.Request) {
 	renderer.PutPreambule(w, "Checking holes in block logs")
 	if processingBlockHoles {
 		renderer.PutLine(w, "<h1>Already running, try later</h1>")
@@ -94,13 +100,13 @@ func (e *ETHDiagnose) blockHoles(w http.ResponseWriter, r *http.Request) {
 	renderer.PutLine(w, "<p>Validated up to block log: %d</p>\n", expected-100)
 }
 
-func (e *ETHDiagnose) dbHoles(w http.ResponseWriter, r *http.Request) {
+func (e *Diagnose) DBHoles(w http.ResponseWriter, r *http.Request) {
 	renderer.PutPreambule(w, "Checking block holes in ETHDB")
 	if processingDBHoles {
 		renderer.PutLine(w, "<h1>Already running, try later</h1>")
 		return
 	}
-	renderer.PutLine(w, "<p>Bigtable: %s</p>\n", e.KvdbConnection)
+	renderer.PutLine(w, "<p>Bigtable: %s</p>\n", e.KvdbConnectionInfo)
 
 	processingDBHoles = true
 	defer func() { processingDBHoles = false }()
@@ -183,7 +189,7 @@ func (e *ETHDiagnose) dbHoles(w http.ResponseWriter, r *http.Request) {
 	renderer.PutLine(w, "<p><strong>Completed at block num %d (%d blocks seen) in %s</strong></p>\n", previousNum, count, time.Now().Sub(startTime))
 }
 
-func (e *ETHDiagnose) searchHoles(w http.ResponseWriter, r *http.Request) {
+func (e *Diagnose) SearchHoles(w http.ResponseWriter, r *http.Request) {
 	renderer.PutPreambule(w, "Checking holes in Search indexes")
 	if processingSearchHoles {
 		renderer.PutLine(w, "<h1>Already running, try later</h1>")
@@ -232,4 +238,14 @@ func (e *ETHDiagnose) searchHoles(w http.ResponseWriter, r *http.Request) {
 	}
 
 	renderer.PutLine(w, "<p>Validated up to index: %d</p>", expected-200)
+}
+
+func (e *Diagnose) GetBlockStoreUrl() string {
+	return e.BlocksStoreUrl
+}
+func (e *Diagnose) GetSearchIndexesStoreUrl() string {
+	return e.SearchIndexesStoreUrl
+}
+func (e *Diagnose) GetKvdbConnectionInfo() string {
+	return e.KvdbConnectionInfo
 }

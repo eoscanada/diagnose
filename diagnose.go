@@ -6,7 +6,10 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"time"
+
+	"net/http/httputil"
 
 	"github.com/eoscanada/dmesh"
 	"github.com/eoscanada/dstore"
@@ -41,9 +44,11 @@ type Diagnose struct {
 	upgrader   *websocket.Upgrader
 	cluster    *kubernetes.Clientset
 	dmeshStore *clientv3.Client
+
+	serveFilePath string
 }
 
-func (d *Diagnose) SetupRoutes() {
+func (d *Diagnose) SetupRoutes(dev bool) {
 	configureValidators()
 
 	upgrader := websocket.Upgrader{
@@ -55,12 +60,8 @@ func (d *Diagnose) SetupRoutes() {
 	d.upgrader = &upgrader
 
 	router := mux.NewRouter()
-	router.Path("/").Methods("GET").HandlerFunc(d.index)
 
 	apiRouter := router.PathPrefix("/api").Subrouter()
-
-	// basic diagnose path
-	//apiRouter.Path("/v1/services_health_checks").Methods("GET").HandlerFunc(d.getServicesHealthChecks)
 	apiRouter.Path("/diagnose/").Methods("POST").Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	apiRouter.Path("/config").Methods("Get").HandlerFunc(d.config)
 	apiRouter.Path("/search_peers").Methods("Get").HandlerFunc(d.searchPeers)
@@ -69,17 +70,18 @@ func (d *Diagnose) SetupRoutes() {
 	apiRouter.Path("/search_holes").Methods("GET").HandlerFunc(d.SearchHoles)
 	apiRouter.Path("/db_holes").Methods("GET").HandlerFunc(d.DBHoles)
 
-	//s.Path("/trx_problems").Methods("GET").HandlerFunc(e.trxProblems)
-	//s.Path("/db_holes").Methods("GET").HandlerFunc(e.DBHoles)
-	//s.Path("/verify_stats").Methods("GET").HandlerFunc(e.verifyStats)
-	//s.Path("/verify_stats_top_accounts").Methods("GET").HandlerFunc(e.verifyStatsTopAccounts)
-
-	// protocol paths
-	//d.diagnose.SetUpgrader(d.upgrader)
-	//d.diagnose.SetupRoutes(apiRouter)
+	if dev {
+		urlStr := "http://localhost:3000"
+		zlog.Info("setting up dev handling", zap.String("url", urlStr))
+		u, _ := url.Parse(urlStr)
+		proxy := httputil.NewSingleHostReverseProxy(u)
+		router.Methods("GET").Handler(proxy)
+	} else {
+		zlog.Info("setting up prod handling", zap.String("serve_file_path", d.serveFilePath))
+		router.PathPrefix("/").Methods("GET").Handler(http.FileServer(http.Dir(d.serveFilePath)))
+	}
 
 	d.router = router
-
 }
 
 func (r *Diagnose) test(w http.ResponseWriter, req *http.Request) {

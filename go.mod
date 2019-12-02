@@ -15,6 +15,7 @@ require (
 	github.com/gorilla/handlers v0.0.0-20181012153334-350d97a79266
 	github.com/gorilla/mux v1.7.0
 	github.com/gorilla/websocket v1.4.1
+	github.com/koding/websocketproxy v0.0.0-20181220232114-7ed82d81a28c // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/thedevsaddam/govalidator v1.9.6

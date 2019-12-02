@@ -67,7 +67,7 @@ func (e *Diagnose) trxProblems(w http.ResponseWriter, r *http.Request) {
 			renderer.PutSyncLine(w, `<p><strong>Found problem with <a href="%s">%s</a> @ #%d (missing meta:written column)</strong></p>`+"\n", inferEosqTrxLink(trxID), prefixTrxID, blockNum)
 
 			return true
-		}, bt.RowFilter(bt.ConditionFilter(bt.ColumnFilter("meta:written"), nil, bt.StripValueFilter())))
+		}, bt.RowFilter(bt.ConditionFilter(bt.ColumnFilter("written"), nil, bt.StripValueFilter())))
 	}
 
 	concurrentReadCount := runtime.NumCPU() - 1

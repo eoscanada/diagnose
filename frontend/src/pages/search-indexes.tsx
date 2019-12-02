@@ -19,7 +19,7 @@ function BaseSearchIndexesPage(): React.ReactElement {
     setProcessing(true)
     setRanges([])
     ApiService.stream<BlockRangeData>({
-      route: "api/search_holes",
+      route: "search_holes",
       onComplete: function () {
         setProcessing(false)
       },

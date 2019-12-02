@@ -7,5 +7,5 @@ export const diagnoseService = {
 };
 
 async function config(): Promise<ApiResponse<DiagnoseConfig>> {
-  return ApiService.get<DiagnoseConfig>("v1/config")
+  return ApiService.get<DiagnoseConfig>("config")
 }

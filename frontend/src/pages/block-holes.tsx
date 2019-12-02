@@ -21,7 +21,7 @@ function BaseBlockHolesPage(
     setProcessing(true)
     setRanges([])
     ApiService.stream<BlockRangeData>({
-      route: "api/block_holes",
+      route: "block_holes",
       onComplete: function () {
         setProcessing(false)
       },

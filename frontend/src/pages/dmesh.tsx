@@ -60,7 +60,7 @@ function BaseDmeshPage(
   const updateDmesh = () => {
     setProcessing(true)
     const stream = ApiService.stream<PeerEvent>({
-      route: "api/v1/search_peers",
+      route: "search_peers",
       onComplete: function () {
         setProcessing(false)
         console.log("search_peers completed")

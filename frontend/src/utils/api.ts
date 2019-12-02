@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { ApiResponse } from '../types'
-
+import { API_URL } from "../config"
 export const ApiService = {
   get,
   stream,
@@ -12,7 +12,7 @@ async function get<T>(route:string, authToken = null): Promise<ApiResponse<T>> {
 
 async function xhr<T>(route:string, params:any, verb:string, authToken = null): Promise<ApiResponse<T>> {
   // Getting the Host
-  const host = 'http://localhost:8080/api/'
+  const host = `http://${API_URL}`
   // Create the URL
   const url = `${host}${route}`
   console.log(`[${verb}] ${url}`)
@@ -61,13 +61,14 @@ function stream<T>(params: {
   onData: (results: ApiResponse<T>) => void
   onComplete: () => void
 }):WebSocket {
-  const host = 'ws://localhost:8080/'
+  const host = `ws://${API_URL}`
   const url = `${host}${params.route}`
 
   let ws = new WebSocket(url);
   ws.onopen = () => {}
 
   ws.onmessage = evt => {
+    console.log("stream resp: ",evt)
     let resp = {data: JSON.parse(evt.data)} as ApiResponse<T>
     params.onData(resp)
   };

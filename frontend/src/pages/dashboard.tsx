@@ -1,7 +1,9 @@
-import React from "react"
+import React, { useEffect } from "react"
 import { withRouter } from "react-router"
 import { MainLayout } from "../components/main-layout"
 import { useAppConfig } from "../hooks/dignose"
+import {ApiService} from "../utils/api";
+import {PeerEvent} from "../types";
 
 function BaseDashboard(): React.ReactElement {
 

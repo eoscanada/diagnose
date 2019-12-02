@@ -5,8 +5,7 @@ import {  ApiService } from "../utils/api";
 import { useAppConfig } from "../hooks/dignose"
 import { SearchPeerList } from "../components/search-peer-list"
 import { MainLayout } from "../components/main-layout"
-import {Typography, Row, Col, Button, Icon, List} from "antd"
-const { Text } = Typography;
+import { Row, Col, Button, Icon} from "antd"
 
 function BaseDmeshPage(
   props: RouteComponentProps
@@ -82,7 +81,7 @@ function BaseDmeshPage(
   };
 
   return (
-    <MainLayout config={appConfig}>
+    <MainLayout config={appConfig} {...props}>
       <Row justify="space-between">
         <Col span={12} style={{ textAlign: "left"}}>
           <h1>dmesh</h1>

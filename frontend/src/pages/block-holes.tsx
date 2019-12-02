@@ -1,45 +1,57 @@
-import React, { useState } from "react"
+import React, {useState, useEffect} from "react"
 import { withRouter, RouteComponentProps } from "react-router"
 import { BlockRangeData } from "../types"
 import {  ApiService } from "../utils/api";
 import { useAppConfig } from "../hooks/dignose"
 import { BlockHolesList } from "../components/block-holes-list"
 import { MainLayout } from "../components/main-layout"
-import {Typography, Row, Col, Button, Icon, List} from "antd"
+import {Typography, Row, Col, Button, Icon} from "antd"
 const { Text } = Typography;
 
 function BaseBlockHolesPage(
   props: RouteComponentProps
 ): React.ReactElement {
 
-  const [processing, setProcessing] = useState(false)
+  const [process, setProcess] = useState(false)
   const [ranges,setRanges] = useState<BlockRangeData[]>([])
 
   const appConfig = useAppConfig()
 
-  const loadBlocks = () => {
-    setProcessing(true)
-    setRanges([])
-    ApiService.stream<BlockRangeData>({
-      route: "block_holes",
-      onComplete: function () {
-        setProcessing(false)
-      },
-      onData: (resp)  => {
-        console.log("new data point: ", resp.data)
-        setRanges((ranges) => [...ranges, resp.data])
+
+  useEffect(
+    () => {
+      var stream:WebSocket;
+      if (process) {
+        setRanges([])
+        stream = ApiService.stream<BlockRangeData>({
+          route: "block_holes",
+          onComplete: function () {
+            setProcess(false)
+          },
+          onData: (resp)  => {
+            setRanges((ranges) => [...ranges, resp.data])
+          }
+        })
       }
-    })
-  };
+
+      return () => {
+        if(stream) {
+          stream.close()
+        }
+      }
+    },
+    [process],
+  );
+
 
   return (
-    <MainLayout config={appConfig}>
+    <MainLayout config={appConfig} {...props}>
       <Row justify="space-between">
         <Col span={12} style={{ textAlign: "left"}}>
           <h1>Block Logs Hole Checker</h1>
         </Col>
         <Col span={12} style={{ textAlign: "right"}}>
-          <Button type="primary" loading={processing} onClick={loadBlocks}>
+          <Button type="primary" loading={process} onClick={() =>setProcess(!process)}>
             process block
             <Icon type="monitor" />
           </Button>

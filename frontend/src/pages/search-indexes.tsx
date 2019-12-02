@@ -1,5 +1,5 @@
-import React, {useState} from "react"
-import { withRouter } from "react-router"
+import React, {useEffect, useState} from "react"
+import {RouteComponentProps, withRouter} from "react-router"
 import { MainLayout } from "../components/main-layout"
 import { useAppConfig } from "../hooks/dignose"
 import {BlockRangeData} from "../types";
@@ -8,35 +8,50 @@ import {BlockHolesList} from "../components/block-holes-list";
 import {Button, Col, Icon, Row, Typography, Tag} from "antd";
 const { Text } = Typography;
 
-function BaseSearchIndexesPage(): React.ReactElement {
+function BaseSearchIndexesPage(
+  props: RouteComponentProps
+): React.ReactElement {
 
-  const [processing, setProcessing] = useState(false)
+  const [process, setProcess] = useState(false)
   const [ranges,setRanges] = useState<BlockRangeData[]>([])
 
   const appConfig = useAppConfig()
 
-  const loadIndexes = () => {
-    setProcessing(true)
-    setRanges([])
-    ApiService.stream<BlockRangeData>({
-      route: "search_holes",
-      onComplete: function () {
-        setProcessing(false)
-      },
-      onData: (resp)  => {
-        setRanges((ranges) => [...ranges, resp.data])
+
+  useEffect(
+    () => {
+      var stream:WebSocket;
+      if (process) {
+        setRanges([])
+        stream = ApiService.stream<BlockRangeData>({
+          route: "search_holes",
+          onComplete: function () {
+            setProcess(false)
+          },
+          onData: (resp)  => {
+            setRanges((ranges) => [...ranges, resp.data])
+          }
+        })
       }
-    })
-  };
+
+      return () => {
+        if(stream) {
+          stream.close()
+        }
+      }
+    },
+    [process],
+  );
+
 
   return (
-    <MainLayout config={appConfig}>
+    <MainLayout config={appConfig} {...props}>
       <Row justify="space-between">
         <Col span={12} style={{ textAlign: "left"}}>
           <h1>Checking holes in Search indexes</h1>
         </Col>
         <Col span={12} style={{ textAlign: "right"}}>
-          <Button type="primary" loading={processing} onClick={loadIndexes}>
+          <Button type="primary" loading={process} onClick={() =>setProcess(!process)}>
             process indexes
             <Icon type="monitor" />
           </Button>

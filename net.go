@@ -12,7 +12,7 @@ func websocketCloser(conn *websocket.Conn, cancel context.CancelFunc) {
 	for {
 		_, payload, err := conn.ReadMessage()
 		if err != nil {
-			fmt.Printf("error: %s\n", err)
+			fmt.Printf("websocketCloser: %s\n", err)
 			// connection closed?
 			cancel()
 			return

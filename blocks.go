@@ -2,10 +2,11 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"regexp"
 	"strconv"
+
+	"github.com/eoscanada/dstore"
 )
 
 var processingBlockHoles bool
@@ -38,8 +39,7 @@ func (d *Diagnose) BlockHoles(w http.ResponseWriter, req *http.Request) {
 	d.BlocksStore.Walk("", "", func(filename string) error {
 		select {
 		case <-ctx.Done():
-			fmt.Println("CONTEXT CANCELED")
-			return context.Canceled
+			return dstore.StopIteration
 		default:
 		}
 

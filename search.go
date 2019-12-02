@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+
+	"github.com/eoscanada/dstore"
 )
 
 var processingSearchHoles bool
@@ -41,10 +43,8 @@ func (e *Diagnose) SearchHoles(w http.ResponseWriter, req *http.Request) {
 
 		select {
 		case <-ctx.Done():
-			fmt.Println("CONTEXT CANCELED")
-			return context.Canceled
+			return dstore.StopIteration
 		default:
-
 		}
 
 		match := number.FindStringSubmatch(filename)
@@ -55,7 +55,6 @@ func (e *Diagnose) SearchHoles(w http.ResponseWriter, req *http.Request) {
 		count++
 		baseNum, _ := strconv.ParseUint(match[1], 10, 32)
 		baseNum32 = uint32(baseNum)
-		fmt.Printf("checking %d, expected %d\n", baseNum32, expected)
 		if baseNum32 != expected {
 			sendMessage(conn, NewValidBlockRange(currentStartBlk, (expected-e.SearchShardSize), "valid range"))
 			sendMessage(conn, NewMissingBlockRange(expected, (baseNum32-e.SearchShardSize), "hole found"))

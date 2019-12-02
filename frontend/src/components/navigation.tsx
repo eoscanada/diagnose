@@ -3,21 +3,23 @@ import { Menu} from 'antd';
 import { Link } from "react-router-dom";
 import { Paths } from '../router/paths';
 
-export function Navigation(): React.ReactElement {
+export function Navigation(props: {
+  currentPath: string
+}): React.ReactElement {
   return (
     <div>
       <Menu
         mode="inline"
-        defaultSelectedKeys={['1']}
+        defaultSelectedKeys={[props.currentPath]}
         style={{ height: '100%' }}
       >
-        <Menu.Item key="1">
+        <Menu.Item key={Paths.blocks}>
           <Link to={Paths.blocks}>Block Logs</Link>
         </Menu.Item>
-        <Menu.Item key="2">
+        <Menu.Item key={Paths.indexes}>
           <Link to={Paths.indexes}>Search Indexes</Link>
         </Menu.Item>
-        <Menu.Item key="3">
+        <Menu.Item key={Paths.dmesh}>
           <Link to={Paths.dmesh}>Dmesh Network</Link>
         </Menu.Item>
       </Menu>

@@ -1,6 +1,6 @@
 import React from "react"
 import { BlockRangeData } from "../types"
-import { Icon, List, Progress } from "antd"
+import { Icon, List } from "antd"
 import { BlockNumRange } from "../atoms/block-num-range"
 import { BlockNum } from "../atoms/block-num"
 
@@ -21,8 +21,8 @@ export function BlockHolesList(props: {
     return (
       <List.Item>
         <div className={"block-range-data-item"}>
-          {(range.status == "valid") && <Icon style={{fontSize: "24px"}} type="check-circle" theme="twoTone" twoToneColor="#52c41a"/>}
-          {(range.status == "hole") && <Icon style={{fontSize: "24px"}}  type="close-circle" theme="twoTone" twoToneColor="#f5222d"/>}
+          {(range.status === "valid") && <Icon style={{fontSize: "24px"}} type="check-circle" theme="twoTone" twoToneColor="#52c41a"/>}
+          {(range.status === "hole") && <Icon style={{fontSize: "24px"}}  type="close-circle" theme="twoTone" twoToneColor="#f5222d"/>}
           <BlockNumRange startBlockNum={range.startBlock} endBlockNum={range.endBlock} />
           {range.message}
         </div>

@@ -51,7 +51,6 @@ async function xhr<T>(route:string, params:any, verb:string, authToken = null): 
       // Something happened in setting up the request that triggered an Error
       return { errors: [error.message] } as ApiResponse<T>
     }
-    throw new Error('unsupported Error Reponse')
   });
 }
 

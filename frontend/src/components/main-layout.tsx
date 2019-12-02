@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
+import React  from 'react';
 import { DiagnoseConfig } from '../types'
 import { TopHeader } from './top-header'
 import { Navigation } from './navigation'
 import { Layout } from 'antd';
-const { Header, Footer, Sider, Content } = Layout;
+import {RouteComponentProps} from "react-router";
+const { Header, Sider, Content } = Layout;
 
-export function MainLayout(props: {
-  config : DiagnoseConfig | undefined,
-  children: React.ReactNode
-}): React.ReactElement {
-
+export function MainLayout(
+  props: {
+    config : DiagnoseConfig | undefined,
+    children: React.ReactNode
+  } & RouteComponentProps
+): React.ReactElement {
   return (
     <Layout style={{height:"100vh"}}>
       <Header
@@ -19,6 +21,7 @@ export function MainLayout(props: {
           background: '#fff',
           boxShadow: "0 2px 8px #f0f1f2",
         }}>
+
         <TopHeader config={props.config} />
       </Header>
       <Layout
@@ -31,7 +34,7 @@ export function MainLayout(props: {
             background: '#fff',
             boxShadow: "0 2px 8px #f0f1f2"
           }}>
-          <Navigation />
+          <Navigation currentPath={props.location.pathname} />
         </Sider>
         <Content
           style={{

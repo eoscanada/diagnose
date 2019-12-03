@@ -47,13 +47,13 @@ type Diagnose struct {
 func (d *Diagnose) SetupRoutes(dev bool) {
 	configureValidators()
 
-	upgrader := websocket.Upgrader{
+	upgrader := &websocket.Upgrader{
 		ReadBufferSize:  1024,
 		WriteBufferSize: 1024,
 	}
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 
-	d.upgrader = &upgradergi
+	d.upgrader = upgrader
 
 	router := mux.NewRouter()
 

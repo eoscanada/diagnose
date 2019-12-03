@@ -62,6 +62,7 @@ github.com/eoscanada/dgrpc v0.0.0-20191115165705-af05d03bcdcb h1:TAth8m13KWz9xqi
 github.com/eoscanada/dgrpc v0.0.0-20191115165705-af05d03bcdcb/go.mod h1:ebCfDwit2UckOCtglf2Nl19wB8/lw/mAyIikrYsd1EA=
 github.com/eoscanada/dmesh v0.0.0-20191126200256-7afe074f2a94 h1:4PV0nLnd/Sv6VUGxzvvPZ3ILmWT33ohhsA+/zQHeOR8=
 github.com/eoscanada/dmesh v0.0.0-20191126200256-7afe074f2a94/go.mod h1:GcPgcIwbR5k7+OEtXY31UR7cGFcAc0k2h9AK1LsHqtA=
+github.com/eoscanada/dmesh v0.0.0-20191203162609-ee7ab4e7c9c8/go.mod h1:GcPgcIwbR5k7+OEtXY31UR7cGFcAc0k2h9AK1LsHqtA=
 github.com/eoscanada/dstore v0.0.7/go.mod h1:CMbeeScw018/QUHw+b7FPUF1FS2zxhrxux8SDP6LRvo=
 github.com/eoscanada/dstore v0.1.4 h1:X6isFq/cdNyojMYT2WGCRpzoaYq7eXHzt5PauZDBZ2A=
 github.com/eoscanada/dstore v0.1.4/go.mod h1:cxOi4tsug89eNA9MbPgtwwNlynDOXg6h1AmlChz3kQ0=

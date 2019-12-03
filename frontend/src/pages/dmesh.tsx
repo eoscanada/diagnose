@@ -83,6 +83,7 @@ function BaseDmeshPage(
 
       return () => {
         if(stream) {
+          console.log("closing stream")
           stream.close()
         }
       }

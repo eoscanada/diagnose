@@ -15,25 +15,52 @@ function BaseKvdbBlocksPage(
   props: RouteComponentProps
 ): React.ReactElement {
 
-  const [process, setProcess] = useState(false)
+  const VALIDATE_BLOCKS = "validating_blocks";
+  const BLOCK_HOLE = "block_holes";
+
+  const [process, setProcess] = useState("")
+  const [title, setTitle] = useState("")
   const [ranges,setRanges] = useState<BlockRangeData[]>([])
 
   const appConfig = useAppConfig()
 
+  const processingBlockHoles = ():boolean   => {
+    return (process === BLOCK_HOLE)
+  }
+
+  const validatingBlocks = ():boolean => {
+    return (process === VALIDATE_BLOCKS)
+  }
+
   useEffect(
     () => {
       var stream:WebSocket;
-      if(process) {
-        stream = ApiService.stream<BlockRangeData>({
-          route: "kvdb_blk_holes",
-          onComplete: function () {
-            setProcess(false)
-          },
-          onData: (resp)  => {
-            console.log(resp)
-            setRanges((ranges) => [...ranges, resp.data])
-          }
-        })
+
+      if(process !== "") {
+        if (processingBlockHoles()) {
+          setTitle("Processing Block Holes")
+          stream = ApiService.stream<BlockRangeData>({
+            route: "kvdb_blk_holes",
+            onComplete: function () {
+              setProcess("")
+            },
+            onData: (resp)  => {
+              setRanges((ranges) => [...ranges, resp.data])
+            }
+          })
+        } else if(validatingBlocks()) {
+          setTitle("Validating Blocks")
+          stream = ApiService.stream<BlockRangeData>({
+            route: "kvdb_blk_validation",
+            onComplete: function () {
+              setProcess("")
+            },
+            onData: (resp)  => {
+              setRanges((ranges) => [...ranges, resp.data])
+            }
+          })
+
+        }
       }
 
       return () => {
@@ -46,6 +73,8 @@ function BaseKvdbBlocksPage(
     [process]
   );
 
+
+
   return (
     <MainLayout config={appConfig} {...props}>
       <PageHeader
@@ -53,11 +82,11 @@ function BaseKvdbBlocksPage(
         title="KVDB Blocks"
         subTitle={"hole checker & validator for KVDB blocks"}
         extra={[
-          <Btn key={1} type="primary" loading={process} onClick={() =>setProcess(!process)} icon={<IconTricorder />}>
-            process blocks Holes
-          </Btn>,
-          <Button key={2} type="primary" loading={process} onClick={() =>setProcess(!process)}>
-          process blocks validation <Icon type="monitor" />
+          <Button key={1} type="primary" shape="round" icon="play-circle" size={'default'} loading={processingBlockHoles()} onClick={() =>setProcess(BLOCK_HOLE)} >
+            Check Block Holes
+          </Button>,
+          <Button key={2} type="primary" shape="round" icon="play-circle" size={'default'} loading={validatingBlocks()} onClick={() =>setProcess(VALIDATE_BLOCKS)} >
+            Validate Blocks
           </Button>,
         ]}
       >
@@ -73,12 +102,8 @@ function BaseKvdbBlocksPage(
 
       <Row>
         <Col>
-          {
-            <BlockHolesList
-              ranges={ranges}
-              inv={true}
-            />
-          }
+          <h1>{title}</h1>
+          { <BlockHolesList  ranges={ranges}  inv={true} /> }
         </Col>
       </Row>
     </MainLayout>

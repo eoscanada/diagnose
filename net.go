@@ -8,6 +8,18 @@ import (
 	"go.uber.org/zap"
 )
 
+func websocketRead(conn *websocket.Conn) {
+	for {
+		_, payload, err := conn.ReadMessage()
+		if err != nil {
+			zlog.Info("websocket received error (closing)", zap.Error(err))
+			return
+		}
+		zlog.Info("websocket received payload", zap.String("payload", string(payload)))
+	}
+
+}
+
 func websocketCloser(conn *websocket.Conn, cancel context.CancelFunc) {
 	for {
 		_, payload, err := conn.ReadMessage()

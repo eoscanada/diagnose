@@ -7,7 +7,7 @@ require (
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/eoscanada/bstream v1.6.3-0.20191128232437-4b607131f34e
 	github.com/eoscanada/derr v0.3.9
-	github.com/eoscanada/dmesh v0.0.0-20191126200256-7afe074f2a94
+	github.com/eoscanada/dmesh v0.0.0-20191203162609-ee7ab4e7c9c8
 	github.com/eoscanada/dstore v0.1.4
 	github.com/eoscanada/kvdb v0.0.12-0.20191121212719-a7cf2b597a07
 	github.com/eoscanada/logging v0.6.6

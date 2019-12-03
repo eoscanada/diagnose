@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -20,17 +19,18 @@ func (r *Diagnose) searchPeers(w http.ResponseWriter, req *http.Request) {
 	}
 	defer conn.Close()
 
-	var ctx, cancel = context.WithCancel(req.Context())
+	ctx := req.Context()
+
+	go websocketRead(conn)
 
 	servicePrefix := fmt.Sprintf("%s/search", r.DmeshServiceVersion)
-
-	go websocketCloser(conn, cancel)
 
 	zlog.Info("observing dmesh", zap.String("namespace", r.Namespace), zap.String("service_prefix", servicePrefix))
 	eventChan := dmesh.Observe(ctx, r.dmeshStore, r.Namespace, servicePrefix)
 	for {
 		select {
 		case <-ctx.Done():
+			zlog.Debug("context canceled")
 			break
 		case peer := <-eventChan:
 			zlog.Debug("dmesh received peer event", zap.Reflect("peer_event", peer))
@@ -40,6 +40,7 @@ func (r *Diagnose) searchPeers(w http.ResponseWriter, req *http.Request) {
 			}
 
 			if err := conn.WriteMessage(websocket.TextMessage, data); err != nil {
+				zlog.Debug("error writing message")
 				return
 			}
 		}

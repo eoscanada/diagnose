@@ -29,7 +29,7 @@ func (d *Diagnose) EOSKVDBBlocks(w http.ResponseWriter, req *http.Request) {
 	count := int64(0)
 	started := false
 	previousNum := int64(0)
-	previousValidNum := int64(0)
+	//previousValidNum := int64(0)
 	batchHighBlockNum := int64(0)
 	currentBlockNum := int64(0)
 
@@ -47,7 +47,7 @@ func (d *Diagnose) EOSKVDBBlocks(w http.ResponseWriter, req *http.Request) {
 
 		if !started {
 			previousNum = currentBlockNum + 1
-			previousValidNum = currentBlockNum + 1
+			//		previousValidNum = currentBlockNum + 1
 			batchStartTime = time.Now()
 			batchHighBlockNum = currentBlockNum
 		}
@@ -55,7 +55,7 @@ func (d *Diagnose) EOSKVDBBlocks(w http.ResponseWriter, req *http.Request) {
 		difference := previousNum - currentBlockNum
 
 		if difference > 1 && started {
-			msg := fmt.Sprintf("%d rows read (batch %s, total %s)\n", (uint32(batchHighBlockNum) - uint32(currentBlockNum+1)))
+			msg := fmt.Sprintf("%d rows read\n", (uint32(batchHighBlockNum) - uint32(currentBlockNum+1)))
 			_ = sendMessage(conn, &BlockRange{
 				StarBlock: uint32(currentBlockNum + 1),
 				EndBlock:  uint32(batchHighBlockNum),
@@ -117,7 +117,7 @@ func (d *Diagnose) EOSKVDBBlocksValidation(w http.ResponseWriter, req *http.Requ
 	count := int64(0)
 	started := false
 	previousNum := int64(0)
-	previousValidNum := int64(0)
+	//previousValidNum := int64(0)
 	batchHighBlockNum := int64(0)
 	currentBlockNum := int64(0)
 
@@ -137,7 +137,7 @@ func (d *Diagnose) EOSKVDBBlocksValidation(w http.ResponseWriter, req *http.Requ
 
 		if !started {
 			previousNum = currentBlockNum + 1
-			previousValidNum = currentBlockNum + 1
+			//previousValidNum = currentBlockNum + 1
 			batchStartTime = time.Now()
 			batchHighBlockNum = currentBlockNum
 		}
@@ -203,7 +203,7 @@ func (d *Diagnose) ETHKVDBBlocks(w http.ResponseWriter, req *http.Request) {
 	count := int64(0)
 	started := false
 	previousNum := uint64(0)
-	previousValidNum := uint64(0)
+	//previousValidNum := uint64(0)
 	batchHighBlockNum := uint64(0)
 	currentBlockNum := uint64(0)
 
@@ -227,7 +227,7 @@ func (d *Diagnose) ETHKVDBBlocks(w http.ResponseWriter, req *http.Request) {
 
 		if !started {
 			previousNum = currentBlockNum + 1
-			previousValidNum = currentBlockNum + 1
+			//previousValidNum = currentBlockNum + 1
 			batchStartTime = time.Now()
 			batchHighBlockNum = currentBlockNum
 		}
@@ -297,7 +297,7 @@ func (d *Diagnose) ETHKVDBBlockValidation(w http.ResponseWriter, req *http.Reque
 	count := int64(0)
 	started := false
 	previousNum := uint64(0)
-	previousValidNum := uint64(0)
+	//previousValidNum := uint64(0)
 	batchHighBlockNum := uint64(0)
 	currentBlockNum := uint64(0)
 
@@ -320,7 +320,7 @@ func (d *Diagnose) ETHKVDBBlockValidation(w http.ResponseWriter, req *http.Reque
 
 		if !started {
 			previousNum = currentBlockNum + 1
-			previousValidNum = currentBlockNum + 1
+			//previousValidNum = currentBlockNum + 1
 			batchStartTime = time.Now()
 			batchHighBlockNum = currentBlockNum
 		}
@@ -328,7 +328,7 @@ func (d *Diagnose) ETHKVDBBlockValidation(w http.ResponseWriter, req *http.Reque
 		difference := previousNum - currentBlockNum
 
 		if difference > 1 && started && isValid {
-			msg := fmt.Sprintf("%d rows read (batch %s, total %s)\n", (uint32(batchHighBlockNum) - uint32(currentBlockNum+1)))
+			msg := fmt.Sprintf("%d rows read\n", (uint32(batchHighBlockNum) - uint32(currentBlockNum+1)))
 			_ = sendMessage(conn, &BlockRange{
 				StarBlock: uint32(currentBlockNum + 1),
 				EndBlock:  uint32(batchHighBlockNum),

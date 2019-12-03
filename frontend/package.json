@@ -1,6 +1,7 @@
 {
   "name": "diagnose-frontend",
   "version": "0.1.0",
+  "homepage": "./",
   "private": true,
   "dependencies": {
     "@types/numeral": "^0.0.26",

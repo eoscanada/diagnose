@@ -3,37 +3,37 @@ import styled from "styled-components/macro"
 import { Button } from "antd"
 
 type Props = {
-  children: React.ReactNode
-  type?: "default"| "primary"| "ghost" | "dashed" | "danger" | "link",
+  startText: string,
+  stopText: string,
   key?: any
-  onClick?: (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => void
+  onStart?: (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => void
+  onStop?: (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => void
   loading?: boolean
-  icon?: React.ReactNode
 }
 
 export function Btn(props: Props): React.ReactElement {
   const {
-    children,
+    startText,
+    stopText,
     key,
-    icon,
-    type = 'primary',
     loading = false,
-    onClick,
+    onStart,
+    onStop,
   } = props
 
-  return (
-    <Button
-      className={'btn'}
-      key={key}
-      type={type}
-      onClick={onClick}
-      loading={loading}
-    >
-      <span className={'svg'}>
-        {icon}
-      </span>
-      {children}
-    </Button>
-  )
+  if (loading) {
+    return (
+      <Button key={key} type={"danger"} icon={"stop"}  onClick={onStop} >
+        {stopText}
+      </Button>
+    )
+  } else {
+    return (
+      <Button key={key} type={"primary"} icon={"play-circle"}  onClick={onStart} >
+        {startText}
+      </Button>
+    )
+  }
 }
+
 

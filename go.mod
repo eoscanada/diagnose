@@ -5,7 +5,7 @@ require (
 	github.com/abourget/llerrgroup v0.0.0-20161118145731-75f536392d17
 	github.com/coreos/go-systemd v0.0.0-20190204112023-081494f7ee4f // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
-	github.com/eoscanada/bstream v1.6.3-0.20191128232437-4b607131f34e
+	github.com/eoscanada/bstream v1.6.3-0.20191128232437-4b607131f34e // indirect
 	github.com/eoscanada/derr v0.3.9
 	github.com/eoscanada/dmesh v0.0.0-20191203162609-ee7ab4e7c9c8
 	github.com/eoscanada/dstore v0.1.4
@@ -17,7 +17,6 @@ require (
 	github.com/gorilla/mux v1.7.0
 	github.com/gorilla/websocket v1.4.1
 	github.com/gregjones/httpcache v0.0.0-20190203031600-7a902570cb17 // indirect
-	github.com/koding/websocketproxy v0.0.0-20181220232114-7ed82d81a28c // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/thedevsaddam/govalidator v1.9.6

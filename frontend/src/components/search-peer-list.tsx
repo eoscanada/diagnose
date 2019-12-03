@@ -7,7 +7,9 @@ export function SearchPeerList(props: {
   }
 ): React.ReactElement {
 
-  const peerItem = props.peers.map((peer) =>
+  const peerItem = props.peers.sort((a:Peer, b:Peer) => {
+    return (a.tier < b.tier) ? -1 : 1
+  }).map((peer:Peer) =>
     <SearchPeerItem peer={peer} />
   );
 

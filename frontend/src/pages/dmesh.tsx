@@ -6,7 +6,8 @@ import { useAppConfig } from "../hooks/dignose"
 import { SearchPeerList } from "../components/search-peer-list"
 import { MainLayout } from "../components/main-layout"
 import { IconTricorder } from "../atoms/svg"
-import { Row, Col, Button, Icon, Typography} from "antd"
+import {Row, Col, Button, Icon, Typography, PageHeader, Descriptions} from "antd"
+import {Btn} from "../atoms/buttons";
 const { Text } = Typography;
 
 function BaseDmeshPage(
@@ -94,7 +95,7 @@ function BaseDmeshPage(
   const trackDmesh = () => {
     return (
       <span>
-        <Icon type="play-circle" style={{marginRight: "10px"}}/> Track dmesh
+        <Icon type="play-circle" style={{marginRight: "10px"}}/>
       </span>
     )
   }
@@ -102,36 +103,38 @@ function BaseDmeshPage(
   const untrackDmesh = () => {
     return (
       <span>
-        <Icon type="stop" style={{marginRight: "10px"}}/> Stop Tracking Dmesh
+        <Icon type="stop" style={{marginRight: "10px"}}/>
       </span>
     )
   }
 
   return (
     <MainLayout config={appConfig} {...props}>
-      <Row justify="space-between">
-        <Col span={12} style={{ textAlign: "left"}}>
-          <h1>Dmesh Peers</h1>
-        </Col>
-        <Col span={12} style={{ textAlign: "right"}}>
-          <Button type={(track ? "danger" : "primary")} onClick={() => setTrack(!track)}>
-            { !track  && trackDmesh() }
-            { track  && untrackDmesh() }
-          </Button>
-        </Col>
-      </Row>
+
+      <PageHeader
+        ghost={true}
+        title="Dmesh Peers"
+        extra={[
+          <Btn key={1}  stopText={'Stop Tracking Dmesh'} startText={'Track Dmesh'} loading={track} onStart={() => setTrack(true)} onStop={() => setTrack(false)} />,
+        ]}
+      >
+        <Descriptions size="small" column={3}>
+          <Descriptions.Item label="Watch Key">
+            {
+              appConfig &&
+              <Text code>/{appConfig.namespace}/{appConfig.dmeshServiceVersion}/search</Text>
+            }
+          </Descriptions.Item>
+        </Descriptions>
+      </PageHeader>
       <Row>
         <Col>
           {
-            appConfig &&
-            (
-              <React.Fragment>
-                <Text code>/{appConfig.namespace}/{appConfig.dmeshServiceVersion}/search</Text>
-                <div style={{marginTop: "10px"}}>
-                  <SearchPeerList peers={peers}/>
-                </div>
-              </React.Fragment>
-            )
+            <React.Fragment>
+              <div style={{marginTop: "10px"}}>
+                <SearchPeerList peers={peers}/>
+              </div>
+            </React.Fragment>
           }
         </Col>
       </Row>

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -22,7 +21,7 @@ func (d *Diagnose) BlockHoles(w http.ResponseWriter, req *http.Request) {
 	}
 	defer conn.Close()
 
-	ctx, cancel := context.WithCancel(req.Context())
+	ctx := req.Context()
 
 	number := regexp.MustCompile(`(\d{10})`)
 
@@ -31,7 +30,7 @@ func (d *Diagnose) BlockHoles(w http.ResponseWriter, req *http.Request) {
 	var baseNum32 uint32
 	currentStartBlk := uint32(0)
 
-	go websocketCloser(conn, cancel)
+	go websocketRead(conn)
 
 	d.BlocksStore.Walk("", "", func(filename string) error {
 		select {
@@ -64,4 +63,5 @@ func (d *Diagnose) BlockHoles(w http.ResponseWriter, req *http.Request) {
 		return nil
 	})
 	sendMessage(conn, NewValidBlockRange(currentStartBlk, baseNum32, "valid range"))
+	zlog.Info("diagnose - block holes - completed")
 }

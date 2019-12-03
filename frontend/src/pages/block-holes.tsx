@@ -5,7 +5,8 @@ import {  ApiService } from "../utils/api";
 import { useAppConfig } from "../hooks/dignose"
 import { BlockHolesList } from "../components/block-holes-list"
 import { MainLayout } from "../components/main-layout"
-import {Typography, Row, Col, Button, Icon} from "antd"
+import {Typography, Row, Col, Button, Icon, Descriptions, PageHeader} from "antd"
+import {Btn} from "../atoms/buttons";
 const { Text } = Typography;
 
 function BaseBlockHolesPage(
@@ -46,35 +47,27 @@ function BaseBlockHolesPage(
 
   return (
     <MainLayout config={appConfig} {...props}>
-      <Row justify="space-between">
-        <Col span={12} style={{ textAlign: "left"}}>
-          <h1>Block Logs Hole Checker</h1>
-        </Col>
-        <Col span={12} style={{ textAlign: "right"}}>
-          <Button type="primary" loading={process} onClick={() =>setProcess(!process)}>
-            process block
-            <Icon type="monitor" />
-          </Button>
-        </Col>
-      </Row>
+      <PageHeader
+        ghost={true}
+        title="Block Logs"
+        subTitle={"hole checker"}
+        extra={[
+          <Btn key={1}  stopText={'Stop Hole Checker'} startText={'Check Block Holes'} loading={process} onStart={() => setProcess(true)} onStop={() => setProcess(false)} />,
+        ]}
+      >
+        <Descriptions size="small" column={3}>
+          <Descriptions.Item label="Block Store URL">
+            {
+              appConfig &&
+              <a target={"_blank"} href={appConfig.blockStoreUrl}>
+                {appConfig.blockStoreUrl}
+              </a>            }
+          </Descriptions.Item>
+        </Descriptions>
+      </PageHeader>
       <Row>
         <Col>
-          {
-            appConfig &&
-            (
-              <div>
-                <p>
-                  Block Store URL:
-                  <Text code>
-                    <a target={"_blank"} href={appConfig.blockStoreUrl}>
-                      {appConfig.blockStoreUrl}
-                    </a>
-                 </Text>
-                </p>
-                <BlockHolesList ranges={ranges} />
-              </div>
-            )
-          }
+          { <BlockHolesList ranges={ranges} /> }
         </Col>
       </Row>
     </MainLayout>

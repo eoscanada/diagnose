@@ -19,7 +19,10 @@ export function SearchPeerItem(props: {
         { props.peer.ready && <Tag color="#87d068">ready</Tag> }
         { !props.peer.ready && <Tag color="#f50">not ready</Tag> }
       </td>
-      <td>{props.peer.reversible}</td>
+      <td>
+        { props.peer.reversible && <Tag color="#108ee9">Live</Tag> }
+        { !props.peer.reversible && <Tag>Archive</Tag> }
+      </td>
     </tr>
   )
 }

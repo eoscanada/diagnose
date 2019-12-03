@@ -37,6 +37,7 @@ function BaseKvdbBlocksPage(
       var stream:WebSocket;
 
       if(process !== "") {
+        setRanges([])
         if (processingBlockHoles()) {
           setTitle("Processing Block Holes")
           stream = ApiService.stream<BlockRangeData>({
@@ -75,6 +76,7 @@ function BaseKvdbBlocksPage(
 
 
 
+
   return (
     <MainLayout config={appConfig} {...props}>
       <PageHeader
@@ -82,12 +84,8 @@ function BaseKvdbBlocksPage(
         title="KVDB Blocks"
         subTitle={"hole checker & validator for KVDB blocks"}
         extra={[
-          <Button key={1} type="primary" shape="round" icon="play-circle" size={'default'} loading={processingBlockHoles()} onClick={() =>setProcess(BLOCK_HOLE)} >
-            Check Block Holes
-          </Button>,
-          <Button key={2} type="primary" shape="round" icon="play-circle" size={'default'} loading={validatingBlocks()} onClick={() =>setProcess(VALIDATE_BLOCKS)} >
-            Validate Blocks
-          </Button>,
+          <Btn key={1}  stopText={'Stop Hole Checker'} startText={'Check Block Holes'} loading={processingBlockHoles()} onStart={() => setProcess(BLOCK_HOLE)} onStop={() => setProcess("")} />,
+          <Btn key={2} stopText={'Stop Validation'} startText={'Validate Blocks'}   loading={validatingBlocks()} onStart={() => setProcess(VALIDATE_BLOCKS)} onStop={() => setProcess("")} />,
         ]}
       >
         <Descriptions size="small" column={3}>
@@ -99,7 +97,6 @@ function BaseKvdbBlocksPage(
           </Descriptions.Item>
         </Descriptions>
       </PageHeader>
-
       <Row>
         <Col>
           <h1>{title}</h1>

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"regexp"
@@ -12,7 +11,7 @@ import (
 )
 
 func (d *Diagnose) SearchHoles(w http.ResponseWriter, req *http.Request) {
-	zlog.Info("process search indexes",
+	zlog.Info("diagnose - search indexes",
 		zap.String("search_indexes_store_url", d.SearchIndexesStoreUrl),
 		zap.Uint32("shard_size", d.SearchShardSize),
 	)
@@ -22,7 +21,7 @@ func (d *Diagnose) SearchHoles(w http.ResponseWriter, req *http.Request) {
 	}
 	defer conn.Close()
 
-	ctx, cancel := context.WithCancel(req.Context())
+	ctx := req.Context()
 
 	number := regexp.MustCompile(`.*/(\d+)\.bleve\.tar\.(zst|gz)$`)
 
@@ -33,7 +32,7 @@ func (d *Diagnose) SearchHoles(w http.ResponseWriter, req *http.Request) {
 	shardPrefix := fmt.Sprintf("shards-%d/", d.SearchShardSize)
 	currentStartBlk := uint32(0)
 
-	go websocketCloser(conn, cancel)
+	go websocketRead(conn)
 
 	_ = d.SearchStore.Walk(shardPrefix, "", func(filename string) error {
 
@@ -66,4 +65,5 @@ func (d *Diagnose) SearchHoles(w http.ResponseWriter, req *http.Request) {
 		return nil
 	})
 	_ = sendMessage(conn, NewValidBlockRange(currentStartBlk, baseNum32, "valid range"))
+	zlog.Info("diagnose - search indexes - completed")
 }

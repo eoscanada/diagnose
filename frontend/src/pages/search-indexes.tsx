@@ -5,7 +5,8 @@ import { useAppConfig } from "../hooks/dignose"
 import {BlockRangeData} from "../types";
 import {ApiService} from "../utils/api";
 import {BlockHolesList} from "../components/block-holes-list";
-import {Button, Col, Icon, Row, Typography, Tag} from "antd";
+import {Button, Col, Icon, Row, Typography, Tag, PageHeader, Descriptions} from "antd";
+import {Btn} from "../atoms/buttons";
 const { Text } = Typography;
 
 function BaseSearchIndexesPage(
@@ -46,36 +47,35 @@ function BaseSearchIndexesPage(
 
   return (
     <MainLayout config={appConfig} {...props}>
-      <Row justify="space-between">
-        <Col span={12} style={{ textAlign: "left"}}>
-          <h1>Search Indexes hole checker</h1>
-        </Col>
-        <Col span={12} style={{ textAlign: "right"}}>
-          <Button type="primary" loading={process} onClick={() =>setProcess(!process)}>
-            process indexe
-            <Icon type="monitor" />
-          </Button>
-        </Col>
-      </Row>
+      <PageHeader
+        ghost={true}
+        title="Search Indexes"
+        subTitle={"hole checker"}
+        extra={[
+          <Btn key={1}  stopText={'Stop Hole Checker'} startText={'Check Search Indexes Holes'} loading={process} onStart={() => setProcess(true)} onStop={() => setProcess(false)} />,
+        ]}
+      >
+        <Descriptions size="small" column={3}>
+          <Descriptions.Item label="Index Store URL">
+            {
+              appConfig &&
+              <Text code>
+                <a target={"_blank"} href={appConfig.indexesStoreUrl}>
+                  {appConfig.blockStoreUrl}
+                </a>
+              </Text>         }
+          </Descriptions.Item>
+          <Descriptions.Item label="Shard size">
+            {
+              appConfig &&
+              <Tag color="#2db7f5">shard size:  {appConfig.shardSize}</Tag>
+            }
+          </Descriptions.Item>
+        </Descriptions>
+      </PageHeader>
       <Row>
         <Col>
-        {
-          appConfig &&
-          (
-            <div>
-              <p>
-                Index Store URL:
-                <Text code>
-                  <a target={"_blank"} href={appConfig.indexesStoreUrl}>
-                    {appConfig.blockStoreUrl}
-                  </a>
-                </Text>
-                <Tag color="#2db7f5">shard size:  {appConfig.shardSize}</Tag>
-              </p>
-              <BlockHolesList ranges={ranges} />
-            </div>
-          )
-        }
+          { <BlockHolesList ranges={ranges} /> }
         </Col>
       </Row>
     </MainLayout>

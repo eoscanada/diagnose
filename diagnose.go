@@ -67,8 +67,10 @@ func (d *Diagnose) SetupRoutes(dev bool) {
 	switch d.Protocol {
 	case "EOS":
 		apiRouter.Path("/kvdb_blk_holes").Methods("GET").HandlerFunc(d.EOSKVDBBlocks)
+		apiRouter.Path("/kvdb_blk_validation").Methods("GET").HandlerFunc(d.EOSKVDBBlocksValidation)
 	case "ETH":
 		apiRouter.Path("/kvdb_blk_holes").Methods("GET").HandlerFunc(d.ETHKVDBBlocks)
+		apiRouter.Path("/kvdb_blk_validation").Methods("GET").HandlerFunc(d.ETHKVDBBlockValidation)
 	}
 
 	if dev {

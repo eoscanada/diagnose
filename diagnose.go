@@ -5,7 +5,16 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+<<<<<<< HEAD
 
+=======
+	"net/url"
+	"time"
+
+	"net/http/httputil"
+
+	"github.com/eoscanada/dmesh"
+>>>>>>> b1a2bf23af096fcaaadf6badd5c0c543b209ee50
 	"github.com/eoscanada/dstore"
 	"github.com/eoscanada/kvdb/eosdb"
 	"github.com/eoscanada/kvdb/ethdb"
@@ -38,9 +47,11 @@ type Diagnose struct {
 	upgrader   *websocket.Upgrader
 	cluster    *kubernetes.Clientset
 	dmeshStore *clientv3.Client
+
+	serveFilePath string
 }
 
-func (d *Diagnose) SetupRoutes() {
+func (d *Diagnose) SetupRoutes(dev bool) {
 	configureValidators()
 
 	upgrader := websocket.Upgrader{
@@ -52,17 +63,31 @@ func (d *Diagnose) SetupRoutes() {
 	d.upgrader = &upgrader
 
 	router := mux.NewRouter()
-	router.Path("/").Methods("GET").HandlerFunc(d.index)
 
 	apiRouter := router.PathPrefix("/api").Subrouter()
-
-	// basic diagnose path
-	//apiRouter.Path("/v1/services_health_checks").Methods("GET").HandlerFunc(d.getServicesHealthChecks)
 	apiRouter.Path("/diagnose/").Methods("POST").Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	apiRouter.Path("/config").Methods("Get").HandlerFunc(d.config)
 	apiRouter.Path("/block_holes").Methods("GET").HandlerFunc(d.BlockHoles)
 	apiRouter.Path("/search_holes").Methods("GET").HandlerFunc(d.SearchHoles)
+<<<<<<< HEAD
 	apiRouter.Path("/search_peers").Methods("Get").HandlerFunc(d.searchPeers)
+=======
+	apiRouter.Path("/db_holes").Methods("GET").HandlerFunc(d.DBHoles)
+
+	if dev {
+		urlStr := "http://localhost:3000"
+		zlog.Info("setting up dev handling", zap.String("url", urlStr))
+		u, _ := url.Parse(urlStr)
+		proxy := httputil.NewSingleHostReverseProxy(u)
+		router.Methods("GET").Handler(proxy)
+	} else {
+		zlog.Info("setting up prod handling", zap.String("serve_file_path", d.serveFilePath))
+		router.PathPrefix("/").Methods("GET").Handler(http.FileServer(http.Dir(d.serveFilePath)))
+	}
+
+	d.router = router
+}
+>>>>>>> b1a2bf23af096fcaaadf6badd5c0c543b209ee50
 
 	switch d.Protocol {
 	case "EOS":

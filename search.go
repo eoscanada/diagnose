@@ -8,19 +8,15 @@ import (
 	"strconv"
 
 	"github.com/eoscanada/dstore"
+	"go.uber.org/zap"
 )
 
-var processingSearchHoles bool
-
-func (e *Diagnose) SearchHoles(w http.ResponseWriter, req *http.Request) {
-	if processingSearchHoles {
-		// Print out to progress
-		return
-	}
-	processingSearchHoles = true
-	defer func() { processingSearchHoles = false }()
-
-	conn, err := e.upgrader.Upgrade(w, req, nil)
+func (d *Diagnose) SearchHoles(w http.ResponseWriter, req *http.Request) {
+	zlog.Info("process search indexes",
+		zap.String("search_indexes_store_url", d.SearchIndexesStoreUrl),
+		zap.Uint32("shard_size", d.SearchShardSize),
+	)
+	conn, err := d.upgrader.Upgrade(w, req, nil)
 	if err != nil {
 		return
 	}
@@ -34,12 +30,12 @@ func (e *Diagnose) SearchHoles(w http.ResponseWriter, req *http.Request) {
 	var count int
 	var baseNum32 uint32
 
-	shardPrefix := fmt.Sprintf("shards-%d/", e.SearchShardSize)
+	shardPrefix := fmt.Sprintf("shards-%d/", d.SearchShardSize)
 	currentStartBlk := uint32(0)
 
 	go websocketCloser(conn, cancel)
 
-	e.SearchStore.Walk(shardPrefix, "", func(filename string) error {
+	_ = d.SearchStore.Walk(shardPrefix, "", func(filename string) error {
 
 		select {
 		case <-ctx.Done():
@@ -56,18 +52,18 @@ func (e *Diagnose) SearchHoles(w http.ResponseWriter, req *http.Request) {
 		baseNum, _ := strconv.ParseUint(match[1], 10, 32)
 		baseNum32 = uint32(baseNum)
 		if baseNum32 != expected {
-			sendMessage(conn, NewValidBlockRange(currentStartBlk, (expected-e.SearchShardSize), "valid range"))
-			sendMessage(conn, NewMissingBlockRange(expected, (baseNum32-e.SearchShardSize), "hole found"))
+			_ = sendMessage(conn, NewValidBlockRange(currentStartBlk, (expected-d.SearchShardSize), "valid range"))
+			_ = sendMessage(conn, NewMissingBlockRange(expected, (baseNum32-d.SearchShardSize), "hole found"))
 			currentStartBlk = baseNum32
 		}
-		expected = baseNum32 + e.SearchShardSize
+		expected = baseNum32 + d.SearchShardSize
 
 		if count%1000 == 0 {
-			sendMessage(conn, NewValidBlockRange(currentStartBlk, baseNum32, "valid range"))
-			currentStartBlk = baseNum32 + e.SearchShardSize
+			_ = sendMessage(conn, NewValidBlockRange(currentStartBlk, baseNum32, "valid range"))
+			currentStartBlk = baseNum32 + d.SearchShardSize
 		}
 
 		return nil
 	})
-	sendMessage(conn, NewValidBlockRange(currentStartBlk, baseNum32, "valid range"))
+	_ = sendMessage(conn, NewValidBlockRange(currentStartBlk, baseNum32, "valid range"))
 }

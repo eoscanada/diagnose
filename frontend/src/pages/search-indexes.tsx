@@ -48,11 +48,11 @@ function BaseSearchIndexesPage(
     <MainLayout config={appConfig} {...props}>
       <Row justify="space-between">
         <Col span={12} style={{ textAlign: "left"}}>
-          <h1>Checking holes in Search indexes</h1>
+          <h1>Search Indexes hole checker</h1>
         </Col>
         <Col span={12} style={{ textAlign: "right"}}>
           <Button type="primary" loading={process} onClick={() =>setProcess(!process)}>
-            process indexes
+            process indexe
             <Icon type="monitor" />
           </Button>
         </Col>
@@ -71,8 +71,6 @@ function BaseSearchIndexesPage(
                   </a>
                 </Text>
                 <Tag color="#2db7f5">shard size:  {appConfig.shardSize}</Tag>
-
-
               </p>
               <BlockHolesList ranges={ranges} />
             </div>

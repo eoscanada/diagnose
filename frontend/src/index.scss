@@ -21,3 +21,14 @@ code {
     padding-right: 10px
   }
 }
+button.btn {
+  border: thin red solid;
+  height: 32px;
+  span.svg {
+    line-height: 1;
+    svg {
+      height:22px;
+    }
+  }
+
+}

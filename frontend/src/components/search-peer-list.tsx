@@ -14,7 +14,6 @@ export function SearchPeerList(props: {
 
   return (
     <div>
-      <h1>Peer Collection</h1>
       <div className={"ant-table-body"}>
         <table style={{
           width: "100%"

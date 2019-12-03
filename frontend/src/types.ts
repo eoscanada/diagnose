@@ -5,6 +5,7 @@ export interface DiagnoseConfig {
   indexesStoreUrl: string
   shardSize: number
   kvdbConnectionInfo: string
+  dmeshServiceVersion: string
 }
 
 export interface BlockRangeData {

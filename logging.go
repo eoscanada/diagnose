@@ -9,6 +9,6 @@ import (
 var zlog = zap.NewNop()
 
 func setupLogger() {
-	zlog = logging.MustCreateLoggerWithServiceName("diagose")
+	zlog = logging.MustCreateLoggerWithServiceName("diagnose")
 	derr.SetLogger(zlog)
 }

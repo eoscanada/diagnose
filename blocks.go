@@ -7,18 +7,15 @@ import (
 	"strconv"
 
 	"github.com/eoscanada/dstore"
+	"go.uber.org/zap"
 )
 
-var processingBlockHoles bool
-
 func (d *Diagnose) BlockHoles(w http.ResponseWriter, req *http.Request) {
-	if processingBlockHoles {
-		return
-	}
-
-	processingBlockHoles = true
-	defer func() { processingBlockHoles = false }()
-
+	const fileBlockSize = 100
+	zlog.Info("diagnose - block holes",
+		zap.String("block_store_url", d.BlocksStoreUrl),
+		zap.Uint32("block_logs_size", fileBlockSize),
+	)
 	conn, err := d.upgrader.Upgrade(w, req, nil)
 	if err != nil {
 		return
@@ -28,7 +25,7 @@ func (d *Diagnose) BlockHoles(w http.ResponseWriter, req *http.Request) {
 	ctx, cancel := context.WithCancel(req.Context())
 
 	number := regexp.MustCompile(`(\d{10})`)
-	const fileBlockSize = 100
+
 	var expected uint32
 	var count int
 	var baseNum32 uint32

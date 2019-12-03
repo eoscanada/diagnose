@@ -1,17 +1,19 @@
-import React, { useState } from "react"
+import React, {useEffect, useState} from "react"
 import { withRouter, RouteComponentProps } from "react-router"
-import { PeerEvent, Peer} from "../types"
+import {PeerEvent, Peer, BlockRangeData} from "../types"
 import {  ApiService } from "../utils/api";
 import { useAppConfig } from "../hooks/dignose"
 import { SearchPeerList } from "../components/search-peer-list"
 import { MainLayout } from "../components/main-layout"
-import { Row, Col, Button, Icon} from "antd"
+import { IconTricorder } from "../atoms/svg"
+import { Row, Col, Button, Icon, Typography} from "antd"
+const { Text } = Typography;
 
 function BaseDmeshPage(
   props: RouteComponentProps
 ): React.ReactElement {
 
-  const [processing, setProcessing] = useState(false)
+  const [track, setTrack] = useState(false)
   const [peers, setPeers] = useState<Peer[]>([])
 
   const appConfig = useAppConfig()
@@ -56,40 +58,64 @@ function BaseDmeshPage(
     });
   }
 
-  const updateDmesh = () => {
-    setProcessing(true)
-    const stream = ApiService.stream<PeerEvent>({
-      route: "search_peers",
-      onComplete: function () {
-        setProcessing(false)
-        console.log("search_peers completed")
-      },
-      onData: (resp)  => {
-        console.log("resp: " ,resp)
-        if (resp.data.EventName === "sync") {
-          addPeer(resp.data.Peer)
-        } else if (resp.data.EventName === "update") {
-          updatePeer(resp.data.Peer)
-        } else if (resp.data.EventName === "delete") {
-          deletePeer(resp.data.Peer)
+
+  useEffect(
+    () => {
+      var stream:WebSocket;
+      if (track) {
+        setPeers([])
+        stream = ApiService.stream<PeerEvent>({
+          route: "search_peers",
+          onComplete: function () {
+            setTrack(false)
+          },
+          onData: (resp)  => {
+            if (resp.data.EventName === "sync") {
+              addPeer(resp.data.Peer)
+            } else if (resp.data.EventName === "update") {
+              updatePeer(resp.data.Peer)
+            } else if (resp.data.EventName === "delete") {
+              deletePeer(resp.data.Peer)
+            }
+          }
+        })
+      }
+
+      return () => {
+        if(stream) {
+          stream.close()
         }
       }
-    })
-    return () => {
-      stream.close()
-    }
-  };
+    },
+    [track],
+  );
+
+  const trackDmesh = () => {
+    return (
+      <span>
+        <Icon type="play-circle" style={{marginRight: "10px"}}/> Track dmesh
+      </span>
+    )
+  }
+
+  const untrackDmesh = () => {
+    return (
+      <span>
+        <Icon type="stop" style={{marginRight: "10px"}}/> Stop Tracking Dmesh
+      </span>
+    )
+  }
 
   return (
     <MainLayout config={appConfig} {...props}>
       <Row justify="space-between">
         <Col span={12} style={{ textAlign: "left"}}>
-          <h1>dmesh</h1>
+          <h1>Dmesh Peers</h1>
         </Col>
         <Col span={12} style={{ textAlign: "right"}}>
-          <Button type="primary" loading={processing} onClick={updateDmesh}>
-            refresh
-            <Icon type="monitor" />
+          <Button type={(track ? "danger" : "primary")} onClick={() => setTrack(!track)}>
+            { !track  && trackDmesh() }
+            { track  && untrackDmesh() }
           </Button>
         </Col>
       </Row>
@@ -97,7 +123,14 @@ function BaseDmeshPage(
         <Col>
           {
             appConfig &&
-            <SearchPeerList peers={peers}/>
+            (
+              <React.Fragment>
+                <Text code>/{appConfig.namespace}/{appConfig.dmeshServiceVersion}/search</Text>
+                <div style={{marginTop: "10px"}}>
+                  <SearchPeerList peers={peers}/>
+                </div>
+              </React.Fragment>
+            )
           }
         </Col>
       </Row>

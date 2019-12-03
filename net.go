@@ -3,21 +3,20 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
 	"github.com/gorilla/websocket"
+	"go.uber.org/zap"
 )
 
 func websocketCloser(conn *websocket.Conn, cancel context.CancelFunc) {
 	for {
 		_, payload, err := conn.ReadMessage()
 		if err != nil {
-			fmt.Printf("websocketCloser: %s\n", err)
-			// connection closed?
+			zlog.Info("websocket received error (closing)", zap.Error(err))
 			cancel()
 			return
 		}
-		fmt.Println("payload: ", string(payload))
+		zlog.Info("websocket received payload", zap.String("payload", string(payload)))
 	}
 
 }

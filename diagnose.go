@@ -1,14 +1,11 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"net"
 	"net/http"
-	"time"
 
-	"github.com/eoscanada/dmesh"
 	"github.com/eoscanada/dstore"
 	"github.com/eoscanada/kvdb/eosdb"
 	"github.com/eoscanada/kvdb/ethdb"
@@ -63,85 +60,23 @@ func (d *Diagnose) SetupRoutes() {
 	//apiRouter.Path("/v1/services_health_checks").Methods("GET").HandlerFunc(d.getServicesHealthChecks)
 	apiRouter.Path("/diagnose/").Methods("POST").Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	apiRouter.Path("/config").Methods("Get").HandlerFunc(d.config)
-	apiRouter.Path("/search_peers").Methods("Get").HandlerFunc(d.searchPeers)
-	apiRouter.Path("/test").Methods("Get").HandlerFunc(d.test)
 	apiRouter.Path("/block_holes").Methods("GET").HandlerFunc(d.BlockHoles)
 	apiRouter.Path("/search_holes").Methods("GET").HandlerFunc(d.SearchHoles)
-	apiRouter.Path("/db_holes").Methods("GET").HandlerFunc(d.DBHoles)
+	apiRouter.Path("/search_peers").Methods("Get").HandlerFunc(d.searchPeers)
 
-	//s.Path("/trx_problems").Methods("GET").HandlerFunc(e.trxProblems)
-	//s.Path("/db_holes").Methods("GET").HandlerFunc(e.DBHoles)
-	//s.Path("/verify_stats").Methods("GET").HandlerFunc(e.verifyStats)
-	//s.Path("/verify_stats_top_accounts").Methods("GET").HandlerFunc(e.verifyStatsTopAccounts)
-
-	// protocol paths
-	//d.diagnose.SetUpgrader(d.upgrader)
-	//d.diagnose.SetupRoutes(apiRouter)
+	switch d.Protocol {
+	case "EOS":
+		apiRouter.Path("/kvdb_blk_holes").Methods("GET").HandlerFunc(d.EOSKVDBBlocks)
+	case "ETH":
+		apiRouter.Path("/kvdb_blk_holes").Methods("GET").HandlerFunc(d.ETHKVDBBlocks)
+	}
 
 	d.router = router
 
 }
 
-func (r *Diagnose) test(w http.ResponseWriter, req *http.Request) {
-	fmt.Printf("--------------------------- test\n")
-	conn, err := r.upgrader.Upgrade(w, req, nil)
-	if err != nil {
-		return
-	}
-	defer conn.Close()
-
-	ctx, cancel := context.WithCancel(req.Context())
-
-	go websocketCloser(conn, cancel)
-
-	for i := 0; i < 10; i++ {
-		select {
-		case <-ctx.Done():
-			fmt.Printf("main loop context canceled\n")
-			return
-		default:
-			msg := fmt.Sprintf("hello world: %d", i)
-			if err := conn.WriteMessage(websocket.TextMessage, []byte(msg)); err != nil {
-				fmt.Printf("ERRROR\n")
-				return
-			}
-			fmt.Printf("Sent: %s\n", msg)
-			time.Sleep(2 * time.Second)
-		}
-	}
-}
-
-func (r *Diagnose) searchPeers(w http.ResponseWriter, req *http.Request) {
-
-	conn, err := r.upgrader.Upgrade(w, req, nil)
-	if err != nil {
-		return
-	}
-	defer conn.Close()
-	ctx := req.Context()
-	servicePrefix := fmt.Sprintf("%s/search", r.DmeshServiceVersion)
-	eventChan := dmesh.Observe(ctx, r.dmeshStore, r.Namespace, servicePrefix)
-	for {
-		select {
-		case <-ctx.Done():
-			break
-		case peer := <-eventChan:
-			fmt.Printf("received peer info\n")
-
-			data, err := json.Marshal(peer)
-			if err != nil {
-				return
-			}
-			fmt.Printf("peer marshall: %s\n", data)
-			if err := conn.WriteMessage(websocket.TextMessage, data); err != nil {
-				return
-			}
-		}
-	}
-}
-
 func (r *Diagnose) config(w http.ResponseWriter, req *http.Request) {
-	json.NewEncoder(w).Encode(r)
+	_ = json.NewEncoder(w).Encode(r)
 }
 
 //func (r *Diagnose) getServicesHealthChecks(w http.ResponseWriter, req *http.Request) {

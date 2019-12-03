@@ -19,6 +19,12 @@ export function Navigation(props: {
         <Menu.Item key={Paths.indexes}>
           <Link to={Paths.indexes}>Search Indexes</Link>
         </Menu.Item>
+        <Menu.Item key={Paths.kvdbBlocks}>
+          <Link to={Paths.kvdbBlocks}>KVDB Blocks</Link>
+        </Menu.Item>
+        <Menu.Item key={Paths.kvdbTrx}>
+          <Link to={Paths.kvdbTrx}>KVDB Trxs</Link>
+        </Menu.Item>
         <Menu.Item key={Paths.dmesh}>
           <Link to={Paths.dmesh}>Dmesh Network</Link>
         </Menu.Item>

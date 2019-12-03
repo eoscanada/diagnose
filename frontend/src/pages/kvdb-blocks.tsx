@@ -73,10 +73,6 @@ function BaseKvdbBlocksPage(
 
       <Row>
         <Col>
-          <Button type="primary" shape="round" icon="download" size={'default'}>
-            Download
-          </Button>
-
           {
             <BlockHolesList
               ranges={ranges}

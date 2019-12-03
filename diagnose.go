@@ -5,16 +5,9 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-<<<<<<< HEAD
-
-=======
-	"net/url"
-	"time"
-
 	"net/http/httputil"
+	"net/url"
 
-	"github.com/eoscanada/dmesh"
->>>>>>> b1a2bf23af096fcaaadf6badd5c0c543b209ee50
 	"github.com/eoscanada/dstore"
 	"github.com/eoscanada/kvdb/eosdb"
 	"github.com/eoscanada/kvdb/ethdb"
@@ -60,7 +53,7 @@ func (d *Diagnose) SetupRoutes(dev bool) {
 	}
 	upgrader.CheckOrigin = func(r *http.Request) bool { return true }
 
-	d.upgrader = &upgrader
+	d.upgrader = &upgradergi
 
 	router := mux.NewRouter()
 
@@ -69,10 +62,14 @@ func (d *Diagnose) SetupRoutes(dev bool) {
 	apiRouter.Path("/config").Methods("Get").HandlerFunc(d.config)
 	apiRouter.Path("/block_holes").Methods("GET").HandlerFunc(d.BlockHoles)
 	apiRouter.Path("/search_holes").Methods("GET").HandlerFunc(d.SearchHoles)
-<<<<<<< HEAD
 	apiRouter.Path("/search_peers").Methods("Get").HandlerFunc(d.searchPeers)
-=======
-	apiRouter.Path("/db_holes").Methods("GET").HandlerFunc(d.DBHoles)
+
+	switch d.Protocol {
+	case "EOS":
+		apiRouter.Path("/kvdb_blk_holes").Methods("GET").HandlerFunc(d.EOSKVDBBlocks)
+	case "ETH":
+		apiRouter.Path("/kvdb_blk_holes").Methods("GET").HandlerFunc(d.ETHKVDBBlocks)
+	}
 
 	if dev {
 		urlStr := "http://localhost:3000"
@@ -86,18 +83,6 @@ func (d *Diagnose) SetupRoutes(dev bool) {
 	}
 
 	d.router = router
-}
->>>>>>> b1a2bf23af096fcaaadf6badd5c0c543b209ee50
-
-	switch d.Protocol {
-	case "EOS":
-		apiRouter.Path("/kvdb_blk_holes").Methods("GET").HandlerFunc(d.EOSKVDBBlocks)
-	case "ETH":
-		apiRouter.Path("/kvdb_blk_holes").Methods("GET").HandlerFunc(d.ETHKVDBBlocks)
-	}
-
-	d.router = router
-
 }
 
 func (r *Diagnose) config(w http.ResponseWriter, req *http.Request) {

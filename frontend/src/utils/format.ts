@@ -1,17 +1,9 @@
-import numeral from "numeral"
-
+import numeral from "numeral";
 
 export function formatNumberWithCommas(input: number | string): string {
-  let str = numeral(input).format("000000000")
-  let formatStr = ""
-  for (var i = 0; i <  str.length; i++) {
-    if (i%3 === 0) {
-      formatStr = formatStr + ","
-    }
-    formatStr = formatStr + str[i]
-  }
-  return formatStr.slice(1,12)
+  return numeral(input).format("0,0");
 }
 
-
-
+export function formatNanoseconds(nano: number): string {
+  return `${nano / 1000000000.0} s`;
+}

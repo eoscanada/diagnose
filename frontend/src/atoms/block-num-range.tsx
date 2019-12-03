@@ -12,22 +12,22 @@ export const BlockNumRange: React.FC<{
   endBlockNum: number,
   inv?: boolean,
 }> = (props) => (
-  <span className={'black-range-num'}>
+  <span className='black-range-num'>
     {
       props.inv &&
       (
-        <React.Fragment>
+        <>
           [<BlockNumWrapper>{formatNumberWithCommas(props.endBlockNum)}</BlockNumWrapper> - <BlockNumWrapper>{formatNumberWithCommas(props.startBlockNum)}</BlockNumWrapper>]
-        </React.Fragment>
+        </>
       )
     }
     {
 
       !props.inv &&
       (
-        <React.Fragment>
+        <>
           [<BlockNumWrapper>{formatNumberWithCommas(props.startBlockNum)}</BlockNumWrapper> - <BlockNumWrapper>{formatNumberWithCommas(props.endBlockNum)}</BlockNumWrapper>]
-        </React.Fragment>
+        </>
       )
     }
   </span>

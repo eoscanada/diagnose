@@ -8,23 +8,12 @@ import (
 	"go.uber.org/zap"
 )
 
-func websocketRead(conn *websocket.Conn) {
+func readWebsocket(conn *websocket.Conn, cancel context.CancelFunc) {
 	for {
 		_, payload, err := conn.ReadMessage()
 		if err != nil {
 			zlog.Info("websocket received error (closing)", zap.Error(err))
-			return
-		}
-		zlog.Info("websocket received payload", zap.String("payload", string(payload)))
-	}
-
-}
-
-func websocketCloser(conn *websocket.Conn, cancel context.CancelFunc) {
-	for {
-		_, payload, err := conn.ReadMessage()
-		if err != nil {
-			zlog.Info("websocket received error (closing)", zap.Error(err))
+			conn.Close()
 			cancel()
 			return
 		}
@@ -32,15 +21,18 @@ func websocketCloser(conn *websocket.Conn, cancel context.CancelFunc) {
 	}
 
 }
-
-func sendMessage(conn *websocket.Conn, obj interface{}) error {
-	data, err := json.Marshal(obj)
+func maybeSendWebsocket(conn *websocket.Conn, objType string, obj interface{}) {
+	data, err := json.Marshal(map[string]interface{}{
+		"type":    objType,
+		"payload": obj,
+	})
 	if err != nil {
-		return err
+		zlog.Warn("cannot marshal object", zap.String("object_type", objType), zap.Reflect("object", obj))
+		return
 	}
 
 	if err := conn.WriteMessage(websocket.TextMessage, data); err != nil {
-		return err
+		zlog.Info("cannot send data", zap.String("data", string(data)))
+		conn.Close()
 	}
-	return nil
 }

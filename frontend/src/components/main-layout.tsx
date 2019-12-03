@@ -1,9 +1,11 @@
 import React  from 'react';
+import { RouteComponentProps } from "react-router";
+import { Layout } from 'antd';
 import { DiagnoseConfig } from '../types'
 import { TopHeader } from './top-header'
 import { Navigation } from './navigation'
-import { Layout } from 'antd';
-import {RouteComponentProps} from "react-router";
+
+
 const { Header, Sider, Content } = Layout;
 
 export function MainLayout(

@@ -7,6 +7,7 @@ require (
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/eoscanada/bstream v1.6.3-0.20191128232437-4b607131f34e // indirect
 	github.com/eoscanada/derr v0.3.9
+	github.com/eoscanada/dhammer v0.0.1
 	github.com/eoscanada/dmesh v0.0.0-20191203162609-ee7ab4e7c9c8
 	github.com/eoscanada/dstore v0.1.4
 	github.com/eoscanada/kvdb v0.0.12-0.20191121212719-a7cf2b597a07
@@ -21,7 +22,6 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/thedevsaddam/govalidator v1.9.6
 	go.etcd.io/etcd v0.0.0-20191023171146-3cf2f69b5738
-	go.uber.org/atomic v1.5.1 // indirect
 	go.uber.org/zap v1.12.0
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	k8s.io/api v0.0.0-20190222213804-5cb15d344471 // indirect

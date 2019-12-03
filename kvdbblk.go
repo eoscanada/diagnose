@@ -24,12 +24,11 @@ func (d *Diagnose) EOSKVDBBlocks(w http.ResponseWriter, req *http.Request) {
 	}
 	defer conn.Close()
 
-	ctx := req.Context()
+	ctx, cancel := context.WithCancel(req.Context())
 
 	count := int64(0)
 	started := false
 	previousNum := int64(0)
-	previousValidNum := int64(0)
 	batchHighBlockNum := int64(0)
 	currentBlockNum := int64(0)
 
@@ -38,32 +37,38 @@ func (d *Diagnose) EOSKVDBBlocks(w http.ResponseWriter, req *http.Request) {
 
 	blocksTable := d.EOSdb.Blocks
 
-	go websocketRead(conn)
+	go readWebsocket(conn, cancel)
 
+	maybeSendWebsocket(conn, WebsocketTypeProgress, Progress{Elapsed: time.Now().Sub(startTime)})
 	blocksTable.BaseTable.ReadRows(ctx, bt.InfiniteRange(""), func(row bt.Row) bool {
 		count++
 
 		currentBlockNum = int64(math.MaxUint32 - kvdb.BlockNum(row.Key()))
 
+		if count%5000 == 0 {
+			maybeSendWebsocket(conn, WebsocketTypeProgress, Progress{Elapsed: time.Now().Sub(startTime)})
+		}
+
 		if !started {
 			previousNum = currentBlockNum + 1
-			previousValidNum = currentBlockNum + 1
 			batchStartTime = time.Now()
 			batchHighBlockNum = currentBlockNum
+
 		}
 
 		difference := previousNum - currentBlockNum
 
 		if difference > 1 && started {
-			msg := fmt.Sprintf("%d rows read (batch %s, total %s)\n", (uint32(batchHighBlockNum) - uint32(currentBlockNum+1)))
-			_ = sendMessage(conn, &BlockRange{
+
+			msg := fmt.Sprintf("%d rows read", (uint32(batchHighBlockNum) - uint32(currentBlockNum+1)))
+			maybeSendWebsocket(conn, WebsocketTypeBlockRange, &BlockRange{
 				StarBlock: uint32(currentBlockNum + 1),
 				EndBlock:  uint32(batchHighBlockNum),
 				Message:   "",
 				Status:    BlockRangeStatusValid,
 			})
-			msg = fmt.Sprintf("Found block hole %d rows\n", (uint32(previousNum-1) - uint32(currentBlockNum+1)))
-			_ = sendMessage(conn, &BlockRange{
+			msg = fmt.Sprintf("Found block hole %d rows", (uint32(previousNum-1) - uint32(currentBlockNum+1)))
+			maybeSendWebsocket(conn, WebsocketTypeBlockRange, &BlockRange{
 				StarBlock: uint32(currentBlockNum + 1),
 				EndBlock:  uint32(previousNum - 1),
 				Message:   msg,
@@ -76,8 +81,8 @@ func (d *Diagnose) EOSKVDBBlocks(w http.ResponseWriter, req *http.Request) {
 
 		if count%200000 == 0 {
 			now := time.Now()
-			msg := fmt.Sprintf("%d rows read (batch %s, total %s)\n", (uint32(batchHighBlockNum) - uint32(currentBlockNum)), now.Sub(batchStartTime), now.Sub(startTime))
-			_ = sendMessage(conn, &BlockRange{
+			msg := fmt.Sprintf("%d rows read (batch %s, total %s)", (uint32(batchHighBlockNum) - uint32(currentBlockNum)), now.Sub(batchStartTime), now.Sub(startTime))
+			maybeSendWebsocket(conn, WebsocketTypeBlockRange, &BlockRange{
 				StarBlock: uint32(currentBlockNum),
 				EndBlock:  uint32(batchHighBlockNum),
 				Message:   msg,
@@ -92,8 +97,8 @@ func (d *Diagnose) EOSKVDBBlocks(w http.ResponseWriter, req *http.Request) {
 		return true
 	}, bt.RowFilter(bt.StripValueFilter()))
 	now := time.Now()
-	msg := fmt.Sprintf("%d rows read (batch %s, total %s)\n", (uint32(batchHighBlockNum) - uint32(currentBlockNum)), now.Sub(batchStartTime), now.Sub(startTime))
-	_ = sendMessage(conn, &BlockRange{
+	msg := fmt.Sprintf("%d rows read (batch %s, total %s)", (uint32(batchHighBlockNum) - uint32(currentBlockNum)), now.Sub(batchStartTime), now.Sub(startTime))
+	maybeSendWebsocket(conn, WebsocketTypeBlockRange, &BlockRange{
 		StarBlock: uint32(currentBlockNum),
 		EndBlock:  uint32(batchHighBlockNum),
 		Message:   msg,
@@ -112,12 +117,11 @@ func (d *Diagnose) EOSKVDBBlocksValidation(w http.ResponseWriter, req *http.Requ
 	}
 	defer conn.Close()
 
-	ctx := req.Context()
+	ctx, cancel := context.WithCancel(req.Context())
 
 	count := int64(0)
 	started := false
 	previousNum := int64(0)
-	previousValidNum := int64(0)
 	batchHighBlockNum := int64(0)
 	currentBlockNum := int64(0)
 
@@ -126,8 +130,9 @@ func (d *Diagnose) EOSKVDBBlocksValidation(w http.ResponseWriter, req *http.Requ
 
 	blocksTable := d.EOSdb.Blocks
 
-	go websocketRead(conn)
+	go readWebsocket(conn, cancel)
 
+	maybeSendWebsocket(conn, WebsocketTypeProgress, Progress{Elapsed: time.Now().Sub(startTime)})
 	blocksTable.BaseTable.ReadRows(ctx, bt.InfiniteRange(""), func(row bt.Row) bool {
 		count++
 
@@ -135,9 +140,12 @@ func (d *Diagnose) EOSKVDBBlocksValidation(w http.ResponseWriter, req *http.Requ
 
 		isValid := utils.HasAllColumns(row, blocksTable.ColBlock, blocksTable.ColMetaIrreversible, blocksTable.ColMetaWritten, blocksTable.ColTransactionRefs, blocksTable.ColTransactionTraceRefs)
 
+		if count%5000 == 0 {
+			maybeSendWebsocket(conn, WebsocketTypeProgress, Progress{Elapsed: time.Now().Sub(startTime)})
+		}
+
 		if !started {
 			previousNum = currentBlockNum + 1
-			previousValidNum = currentBlockNum + 1
 			batchStartTime = time.Now()
 			batchHighBlockNum = currentBlockNum
 		}
@@ -145,8 +153,8 @@ func (d *Diagnose) EOSKVDBBlocksValidation(w http.ResponseWriter, req *http.Requ
 		difference := previousNum - currentBlockNum
 
 		if difference > 1 && started && isValid {
-			msg := fmt.Sprintf("Found missing columns(s) %d rows\n", (uint32(previousNum-1) - uint32(currentBlockNum+1)))
-			_ = sendMessage(conn, &BlockRange{
+			msg := fmt.Sprintf("Found missing columns(s) %d rows", (uint32(previousNum-1) - uint32(currentBlockNum+1)))
+			maybeSendWebsocket(conn, WebsocketTypeBlockRange, &BlockRange{
 				StarBlock: uint32(currentBlockNum + 1),
 				EndBlock:  uint32(previousNum - 1),
 				Message:   msg,
@@ -161,8 +169,8 @@ func (d *Diagnose) EOSKVDBBlocksValidation(w http.ResponseWriter, req *http.Requ
 
 		if count%200000 == 0 {
 			now := time.Now()
-			msg := fmt.Sprintf("%d rows read (batch %s, total %s)\n", (uint32(batchHighBlockNum) - uint32(currentBlockNum)), now.Sub(batchStartTime), now.Sub(startTime))
-			_ = sendMessage(conn, &BlockRange{
+			msg := fmt.Sprintf("%d rows read (batch %s, total %s)", (uint32(batchHighBlockNum) - uint32(currentBlockNum)), now.Sub(batchStartTime), now.Sub(startTime))
+			maybeSendWebsocket(conn, WebsocketTypeBlockRange, &BlockRange{
 				StarBlock: uint32(currentBlockNum),
 				EndBlock:  uint32(batchHighBlockNum),
 				Message:   msg,
@@ -177,8 +185,8 @@ func (d *Diagnose) EOSKVDBBlocksValidation(w http.ResponseWriter, req *http.Requ
 		return true
 	}, bt.RowFilter(bt.StripValueFilter()))
 	now := time.Now()
-	msg := fmt.Sprintf("%d rows read (batch %s, total %s)\n", (uint32(batchHighBlockNum) - uint32(currentBlockNum)), now.Sub(batchStartTime), now.Sub(startTime))
-	_ = sendMessage(conn, &BlockRange{
+	msg := fmt.Sprintf("%d rows read (batch %s, total %s)", (uint32(batchHighBlockNum) - uint32(currentBlockNum)), now.Sub(batchStartTime), now.Sub(startTime))
+	maybeSendWebsocket(conn, WebsocketTypeBlockRange, &BlockRange{
 		StarBlock: uint32(currentBlockNum),
 		EndBlock:  uint32(batchHighBlockNum),
 		Message:   msg,
@@ -203,7 +211,6 @@ func (d *Diagnose) ETHKVDBBlocks(w http.ResponseWriter, req *http.Request) {
 	count := int64(0)
 	started := false
 	previousNum := uint64(0)
-	previousValidNum := uint64(0)
 	batchHighBlockNum := uint64(0)
 	currentBlockNum := uint64(0)
 
@@ -212,8 +219,8 @@ func (d *Diagnose) ETHKVDBBlocks(w http.ResponseWriter, req *http.Request) {
 
 	blocksTable := d.ETHdb.Blocks
 
-	go websocketCloser(conn, cancel)
-
+	go readWebsocket(conn, cancel)
+	maybeSendWebsocket(conn, WebsocketTypeProgress, Progress{Elapsed: time.Now().Sub(startTime)})
 	// You can test on a lower range with `bt.NewRange("ff76abbf", "ff76abcf")`
 	blocksTable.BaseTable.ReadRows(ctx, bt.InfiniteRange("blkn:"), func(row bt.Row) bool {
 		count++
@@ -223,21 +230,21 @@ func (d *Diagnose) ETHKVDBBlocks(w http.ResponseWriter, req *http.Request) {
 			return false
 		}
 
-		//isValid := utils.HasAllColumns(row, blocksTable.ColHeaderProto, blocksTable.ColMetaIrreversible, blocksTable.ColMetaMapping, blocksTable.ColMetaWritten, blocksTable.ColTrxRefsProto, blocksTable.ColUnclesProto)
+		if count%5000 == 0 {
+			maybeSendWebsocket(conn, WebsocketTypeProgress, Progress{Elapsed: time.Now().Sub(startTime)})
+		}
 
 		if !started {
 			previousNum = currentBlockNum + 1
-			previousValidNum = currentBlockNum + 1
 			batchStartTime = time.Now()
 			batchHighBlockNum = currentBlockNum
 		}
 
 		difference := previousNum - currentBlockNum
-		//differenceInvalid := previousValidNum - currentBlockNum
 
 		if difference > 1 && started {
-			msg := fmt.Sprintf("Found block hole %d rows\n", (uint32(previousNum-1) - uint32(currentBlockNum+1)))
-			_ = sendMessage(conn, &BlockRange{
+			msg := fmt.Sprintf("Found block hole %d rows", (uint32(previousNum-1) - uint32(currentBlockNum+1)))
+			maybeSendWebsocket(conn, WebsocketTypeBlockRange, &BlockRange{
 				StarBlock: uint32(currentBlockNum + 1),
 				EndBlock:  uint32(previousNum - 1),
 				Message:   msg,
@@ -246,17 +253,12 @@ func (d *Diagnose) ETHKVDBBlocks(w http.ResponseWriter, req *http.Request) {
 			batchHighBlockNum = currentBlockNum
 		}
 
-		//if differenceInvalid > 1 && started && isValid {
-		//	holeFound = true
-		//	renderer.PutLine(w, "<p><strong>Found missing column(s) hole: [%d, %d]</strong></p>\n", currentBlockNum+1, previousValidNum-1)
-		//}
-
 		previousNum = currentBlockNum
 
 		if count%200000 == 0 {
 			now := time.Now()
-			msg := fmt.Sprintf("%d rows read (batch %s, total %s)\n", (uint32(batchHighBlockNum) - uint32(currentBlockNum)), now.Sub(batchStartTime), now.Sub(startTime))
-			_ = sendMessage(conn, &BlockRange{
+			msg := fmt.Sprintf("%d rows read (batch %s, total %s)", (uint32(batchHighBlockNum) - uint32(currentBlockNum)), now.Sub(batchStartTime), now.Sub(startTime))
+			maybeSendWebsocket(conn, WebsocketTypeBlockRange, &BlockRange{
 				StarBlock: uint32(currentBlockNum),
 				EndBlock:  uint32(batchHighBlockNum),
 				Message:   msg,
@@ -271,8 +273,8 @@ func (d *Diagnose) ETHKVDBBlocks(w http.ResponseWriter, req *http.Request) {
 		return true
 	}, bt.RowFilter(bt.StripValueFilter()))
 	now := time.Now()
-	msg := fmt.Sprintf("%d rows read (batch %s, total %s)\n", (uint32(batchHighBlockNum) - uint32(currentBlockNum)), now.Sub(batchStartTime), now.Sub(startTime))
-	_ = sendMessage(conn, &BlockRange{
+	msg := fmt.Sprintf("%d rows read (batch %s, total %s)", (uint32(batchHighBlockNum) - uint32(currentBlockNum)), now.Sub(batchStartTime), now.Sub(startTime))
+	maybeSendWebsocket(conn, WebsocketTypeBlockRange, &BlockRange{
 		StarBlock: uint32(currentBlockNum),
 		EndBlock:  uint32(batchHighBlockNum),
 		Message:   msg,
@@ -297,7 +299,6 @@ func (d *Diagnose) ETHKVDBBlockValidation(w http.ResponseWriter, req *http.Reque
 	count := int64(0)
 	started := false
 	previousNum := uint64(0)
-	previousValidNum := uint64(0)
 	batchHighBlockNum := uint64(0)
 	currentBlockNum := uint64(0)
 
@@ -306,8 +307,9 @@ func (d *Diagnose) ETHKVDBBlockValidation(w http.ResponseWriter, req *http.Reque
 
 	blocksTable := d.ETHdb.Blocks
 
-	go websocketCloser(conn, cancel)
+	go readWebsocket(conn, cancel)
 
+	maybeSendWebsocket(conn, WebsocketTypeProgress, Progress{Elapsed: time.Now().Sub(startTime)})
 	blocksTable.BaseTable.ReadRows(ctx, bt.InfiniteRange("blkn:"), func(row bt.Row) bool {
 		count++
 
@@ -318,9 +320,12 @@ func (d *Diagnose) ETHKVDBBlockValidation(w http.ResponseWriter, req *http.Reque
 
 		isValid := utils.HasAllColumns(row, blocksTable.ColHeaderProto, blocksTable.ColMetaIrreversible, blocksTable.ColMetaMapping, blocksTable.ColMetaWritten, blocksTable.ColTrxRefsProto, blocksTable.ColUnclesProto)
 
+		if count%5000 == 0 {
+			maybeSendWebsocket(conn, WebsocketTypeProgress, Progress{Elapsed: time.Now().Sub(startTime)})
+		}
+
 		if !started {
 			previousNum = currentBlockNum + 1
-			previousValidNum = currentBlockNum + 1
 			batchStartTime = time.Now()
 			batchHighBlockNum = currentBlockNum
 		}
@@ -328,15 +333,15 @@ func (d *Diagnose) ETHKVDBBlockValidation(w http.ResponseWriter, req *http.Reque
 		difference := previousNum - currentBlockNum
 
 		if difference > 1 && started && isValid {
-			msg := fmt.Sprintf("%d rows read (batch %s, total %s)\n", (uint32(batchHighBlockNum) - uint32(currentBlockNum+1)))
-			_ = sendMessage(conn, &BlockRange{
+			msg := fmt.Sprintf("%d rows read", (uint32(batchHighBlockNum) - uint32(currentBlockNum+1)))
+			maybeSendWebsocket(conn, WebsocketTypeBlockRange, &BlockRange{
 				StarBlock: uint32(currentBlockNum + 1),
 				EndBlock:  uint32(batchHighBlockNum),
 				Message:   "",
 				Status:    BlockRangeStatusValid,
 			})
 			msg = fmt.Sprintf("Found missing column(s) %d rows\n", (uint32(previousNum-1) - uint32(currentBlockNum+1)))
-			_ = sendMessage(conn, &BlockRange{
+			maybeSendWebsocket(conn, WebsocketTypeBlockRange, &BlockRange{
 				StarBlock: uint32(currentBlockNum + 1),
 				EndBlock:  uint32(previousNum - 1),
 				Message:   msg,
@@ -352,7 +357,7 @@ func (d *Diagnose) ETHKVDBBlockValidation(w http.ResponseWriter, req *http.Reque
 		if count%200000 == 0 {
 			now := time.Now()
 			msg := fmt.Sprintf("%d rows read (batch %s, total %s)\n", (uint32(batchHighBlockNum) - uint32(currentBlockNum)), now.Sub(batchStartTime), now.Sub(startTime))
-			_ = sendMessage(conn, &BlockRange{
+			maybeSendWebsocket(conn, WebsocketTypeBlockRange, &BlockRange{
 				StarBlock: uint32(currentBlockNum),
 				EndBlock:  uint32(batchHighBlockNum),
 				Message:   msg,
@@ -368,7 +373,7 @@ func (d *Diagnose) ETHKVDBBlockValidation(w http.ResponseWriter, req *http.Reque
 	}, bt.RowFilter(bt.StripValueFilter()))
 	now := time.Now()
 	msg := fmt.Sprintf("%d rows read (batch %s, total %s)\n", (uint32(batchHighBlockNum) - uint32(currentBlockNum)), now.Sub(batchStartTime), now.Sub(startTime))
-	_ = sendMessage(conn, &BlockRange{
+	maybeSendWebsocket(conn, WebsocketTypeBlockRange, &BlockRange{
 		StarBlock: uint32(currentBlockNum),
 		EndBlock:  uint32(batchHighBlockNum),
 		Message:   msg,

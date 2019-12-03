@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"regexp"
 	"strconv"
+	"time"
 
 	"github.com/eoscanada/dstore"
 	"go.uber.org/zap"
@@ -21,7 +23,7 @@ func (d *Diagnose) BlockHoles(w http.ResponseWriter, req *http.Request) {
 	}
 	defer conn.Close()
 
-	ctx := req.Context()
+	ctx, cancel := context.WithCancel(req.Context())
 
 	number := regexp.MustCompile(`(\d{10})`)
 
@@ -29,14 +31,21 @@ func (d *Diagnose) BlockHoles(w http.ResponseWriter, req *http.Request) {
 	var count int
 	var baseNum32 uint32
 	currentStartBlk := uint32(0)
+	startTime := time.Now()
 
-	go websocketRead(conn)
+	go readWebsocket(conn, cancel)
 
+	maybeSendWebsocket(conn, WebsocketTypeProgress, Progress{Elapsed: time.Now().Sub(startTime)})
 	d.BlocksStore.Walk("", "", func(filename string) error {
 		select {
 		case <-ctx.Done():
+			zlog.Debug("context canceled")
 			return dstore.StopIteration
 		default:
+		}
+
+		if count%5000 == 0 {
+			maybeSendWebsocket(conn, WebsocketTypeProgress, Progress{Elapsed: time.Now().Sub(startTime)})
 		}
 
 		match := number.FindStringSubmatch(filename)
@@ -49,19 +58,19 @@ func (d *Diagnose) BlockHoles(w http.ResponseWriter, req *http.Request) {
 		baseNum32 = uint32(baseNum)
 
 		if baseNum32 != expected {
-			sendMessage(conn, NewValidBlockRange(currentStartBlk, (expected-fileBlockSize), "valid range"))
-			sendMessage(conn, NewMissingBlockRange(expected, (baseNum32-fileBlockSize), "hole found"))
+			maybeSendWebsocket(conn, WebsocketTypeBlockRange, NewValidBlockRange(currentStartBlk, (expected-fileBlockSize), "valid range"))
+			maybeSendWebsocket(conn, WebsocketTypeBlockRange, NewMissingBlockRange(expected, (baseNum32-fileBlockSize), "hole found"))
 			currentStartBlk = baseNum32
 		}
 		expected = baseNum32 + fileBlockSize
 
 		if count%10000 == 0 {
-			sendMessage(conn, NewValidBlockRange(currentStartBlk, baseNum32, "valid range"))
+			maybeSendWebsocket(conn, WebsocketTypeBlockRange, NewValidBlockRange(currentStartBlk, baseNum32, "valid range"))
 			currentStartBlk = baseNum32 + fileBlockSize
 		}
 
 		return nil
 	})
-	sendMessage(conn, NewValidBlockRange(currentStartBlk, baseNum32, "valid range"))
+	maybeSendWebsocket(conn, WebsocketTypeBlockRange, NewValidBlockRange(currentStartBlk, baseNum32, "valid range"))
 	zlog.Info("diagnose - block holes - completed")
 }

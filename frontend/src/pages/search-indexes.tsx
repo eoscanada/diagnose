@@ -57,13 +57,13 @@ function BaseSearchIndexesPage(props: RouteComponentProps): React.ReactElement {
             stopText="Stop Hole Checker"
             startText="Check Search Indexes Holes"
             loading={process}
-            onStart={event => {
+            onStart={e => {
+              e.preventDefault();
               setProcess(true);
-              event.preventDefault();
             }}
-            onStop={event => {
+            onStop={e => {
+              e.preventDefault();
               setProcess(false);
-              event.preventDefault();
             }}
           />
         ]}

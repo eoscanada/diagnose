@@ -100,27 +100,21 @@ function BaseKvdbBlocksPage(props: RouteComponentProps): React.ReactElement {
             stopText="Stop Hole Checker"
             startText="Check Block Holes"
             loading={processingBlockHoles()}
-            onStart={event => {
-              setProcess(BLOCK_HOLE);
-              event.preventDefault();
-            }}
-            onStop={event => {
-              setProcess("");
-              event.preventDefault();
-            }}
+            onStart={() => setProcess(BLOCK_HOLE)}
+            onStop={() => setProcess("")}
           />,
           <Btn
             key={2}
             stopText="Stop Validation"
             startText="Validate Blocks"
             loading={validatingBlocks()}
-            onStart={event => {
+            onStart={e => {
+              e.preventDefault();
               setProcess(VALIDATE_BLOCKS);
-              event.preventDefault();
             }}
-            onStop={event => {
+            onStop={e => {
+              e.preventDefault();
               setProcess("");
-              event.preventDefault();
             }}
           />
         ]}

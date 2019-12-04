@@ -107,13 +107,13 @@ function BaseKvdbTrxsPage(props: RouteComponentProps): React.ReactElement {
             stopText="Stop Trx Validation"
             startText="Check Transaction Validation"
             loading={process}
-            onStart={event => {
+            onStart={e => {
+              e.preventDefault();
               setProcess(true);
-              event.preventDefault();
             }}
-            onStop={event => {
+            onStop={e => {
+              e.preventDefault();
               setProcess(false);
-              event.preventDefault();
             }}
           />
         ]}

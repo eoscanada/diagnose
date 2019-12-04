@@ -79,7 +79,7 @@ func (d *Diagnose) SetupRoutes(dev bool) {
 		zlog.Info("setting up dev handling", zap.String("url", urlStr))
 		u, _ := url.Parse(urlStr)
 		proxy := httputil.NewSingleHostReverseProxy(u)
-		router.Methods("GET").Handler(proxy)
+		router.PathPrefix("/").Methods("GET").Handler(proxy)
 	} else {
 		zlog.Info("setting up prod handling", zap.String("serve_file_path", d.serveFilePath))
 		router.PathPrefix("/").Methods("GET").Handler(http.FileServer(http.Dir(d.serveFilePath)))
@@ -131,19 +131,6 @@ func (r *Diagnose) config(w http.ResponseWriter, req *http.Request) {
 //		}
 //	}
 //}
-
-func (r *Diagnose) index(w http.ResponseWriter, req *http.Request) {
-	//data := &tplData{
-	//	Router:             r.router,
-	//	Protocol:           r.Protocol,
-	//	Namespace:          r.Namespace,
-	//	BlockStore:         r.diagnose.GetBlockStoreUrl(),
-	//	SearchIndexesStore: r.diagnose.GetSearchIndexesStoreUrl(),
-	//	KVDBConnection:     r.diagnose.GetKvdbConnectionInfo(),
-	//}
-	//
-	//r.renderTemplate(w, data)
-}
 
 func (r *Diagnose) Serve() error {
 

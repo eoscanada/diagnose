@@ -22,7 +22,7 @@ export function Btn(props: Props): React.ReactElement {
   }
 
   return (
-    <Button key={key} type="primary" icon="play-circle" onClick={onStart}>
+    <Button key={key} type="primary" icon="play-circle" onClick={() => onStart}>
       {startText}
     </Button>
   );

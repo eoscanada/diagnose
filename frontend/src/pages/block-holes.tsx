@@ -60,8 +60,14 @@ function BaseBlockHolesPage(props: RouteComponentProps): React.ReactElement {
             stopText="Stop Hole Checker"
             startText="Check Block Holes"
             loading={process}
-            onStart={() => setProcess(true)}
-            onStop={() => setProcess(false)}
+            onStart={event => {
+              setProcess(true);
+              event.preventDefault();
+            }}
+            onStop={event => {
+              setProcess(false);
+              event.preventDefault();
+            }}
           />
         ]}
       >

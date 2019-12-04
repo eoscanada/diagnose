@@ -96,8 +96,14 @@ function BaseDmeshPage(props: RouteComponentProps): React.ReactElement {
             stopText="Stop Tracking Dmesh"
             startText="Track Dmesh"
             loading={track}
-            onStart={() => setTrack(true)}
-            onStop={() => setTrack(false)}
+            onStart={event => {
+              setTrack(true);
+              event.preventDefault();
+            }}
+            onStop={event => {
+              setTrack(false);
+              event.preventDefault();
+            }}
           />
         ]}
       >

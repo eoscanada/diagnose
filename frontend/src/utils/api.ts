@@ -1,6 +1,6 @@
 import axios from "axios";
 import { ApiResponse, SocketMessage } from "../types";
-import { API_URL } from "../config";
+import { API_URL, API_SSL } from "../config";
 
 async function xhr<T>(
   route: string,
@@ -9,7 +9,8 @@ async function xhr<T>(
   authToken = null
 ): Promise<ApiResponse<T>> {
   // Getting the Host
-  const host = `http://${API_URL}`;
+  const httpProto = API_SSL ? "https" : "http";
+  const host = `${httpProto}://${API_URL}`;
   // Create the URL
   const url = `${host}${route}`;
   console.log(`[${verb}] ${url}`);
@@ -61,7 +62,8 @@ function stream(params: {
   onData: (results: SocketMessage) => void;
   onComplete: () => void;
 }): WebSocket {
-  const host = `ws://${API_URL}`;
+  const wsProto = API_SSL ? "wss" : "ws";
+  const host = `${wsProto}://${API_URL}`;
   const url = `${host}${params.route}`;
 
   const ws = new WebSocket(url);

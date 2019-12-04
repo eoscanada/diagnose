@@ -30,15 +30,13 @@ type Diagnose struct {
 
 	BlocksStore dstore.Store
 	SearchStore dstore.Store
+	EOSdb       *eosdb.EOSDatabase
+	ETHdb       *ethdb.ETHDatabase
 
-	EOSdb *eosdb.EOSDatabase
-	ETHdb *ethdb.ETHDatabase
-
-	router     *mux.Router
-	upgrader   *websocket.Upgrader
-	cluster    *kubernetes.Clientset
-	dmeshStore *clientv3.Client
-
+	router        *mux.Router
+	upgrader      *websocket.Upgrader
+	cluster       *kubernetes.Clientset
+	dmeshStore    *clientv3.Client
 	serveFilePath string
 }
 

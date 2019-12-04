@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
 
 	"github.com/eoscanada/dstore"
 	"github.com/eoscanada/kvdb/eosdb"
@@ -74,16 +72,9 @@ func (d *Diagnose) SetupRoutes(dev bool) {
 		apiRouter.Path("/kvdb_blk_validation").Methods("GET").HandlerFunc(d.ETHKVDBBlockValidation)
 	}
 
-	if dev {
-		urlStr := "http://localhost:3000"
-		zlog.Info("setting up dev handling", zap.String("url", urlStr))
-		u, _ := url.Parse(urlStr)
-		proxy := httputil.NewSingleHostReverseProxy(u)
-		router.PathPrefix("/").Methods("GET").Handler(proxy)
-	} else {
-		zlog.Info("setting up prod handling", zap.String("serve_file_path", d.serveFilePath))
-		router.PathPrefix("/").Methods("GET").Handler(http.FileServer(http.Dir(d.serveFilePath)))
-	}
+	// SPA + static contents handling
+	coreRouter := router.PathPrefix("/").Subrouter()
+	coreRouter.PathPrefix("/").Handler(NewSPAHandler(d.serveFilePath, dev))
 
 	d.router = router
 }

@@ -9,7 +9,7 @@ async function xhr<T>(
   authToken = null
 ): Promise<ApiResponse<T>> {
   // Getting the Host
-  const host = `http://${API_URL}`;
+  const host = `https://${API_URL}`;
   // Create the URL
   const url = `${host}${route}`;
   console.log(`[${verb}] ${url}`);

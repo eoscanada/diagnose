@@ -58,7 +58,7 @@ export interface PeerEventSocketMessage {
 
 export interface Peer {
   boot: string;
-  firstBlockNum: number;
+  tailBlockNum: number;
   headBlockID: string;
   headBlockNum: number;
   headMoves: boolean;

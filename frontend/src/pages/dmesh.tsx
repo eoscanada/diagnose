@@ -13,6 +13,7 @@ const { Text } = Typography;
 function BaseDmeshPage(props: RouteComponentProps): React.ReactElement {
   const [track, setTrack] = useState(false);
   const [peers, setPeers] = useState<Peer[]>([]);
+  const [headBlockNum, setHeadBlockNum] = useState(0);
 
   const appConfig = useAppConfig();
 
@@ -30,6 +31,9 @@ function BaseDmeshPage(props: RouteComponentProps): React.ReactElement {
   };
 
   const updatePeer = (peer: Peer) => {
+    if (peer.headBlockNum > headBlockNum) {
+      setHeadBlockNum(peer.headBlockNum);
+    }
     setPeers(currentPeers => {
       const newCUrrentPeers = currentPeers.map(peerItem => {
         if (peerItem.host === peer.host) {
@@ -42,6 +46,9 @@ function BaseDmeshPage(props: RouteComponentProps): React.ReactElement {
   };
 
   const addPeer = (peer: Peer) => {
+    if (peer.headBlockNum > headBlockNum) {
+      setHeadBlockNum(peer.headBlockNum);
+    }
     setPeers(currentPeers => {
       return [...currentPeers, peer];
     });
@@ -120,7 +127,7 @@ function BaseDmeshPage(props: RouteComponentProps): React.ReactElement {
       <Row>
         <Col>
           <div style={{ marginTop: "10px" }}>
-            <SearchPeerList peers={peers} />
+            <SearchPeerList peers={peers} headBlockNum={headBlockNum} />
           </div>
         </Col>
       </Row>

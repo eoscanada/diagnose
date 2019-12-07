@@ -2,7 +2,7 @@ import React from "react";
 import { Tag, Slider } from "antd";
 import { Peer } from "../types";
 import { BlockNum } from "../atoms/block-num";
-import { formatNumberWithCommas, formatTime } from "../utils/format";
+import { formatNumberWithCommas } from "../utils/format";
 import Moment from "react-moment";
 import "moment-timezone";
 
@@ -10,6 +10,7 @@ export function SearchPeerItem(props: {
   peer: Peer;
   headBlockNum: number;
   visualize: boolean;
+  showKey: boolean;
 }): React.ReactElement {
   const { peer, headBlockNum } = props;
 
@@ -17,11 +18,11 @@ export function SearchPeerItem(props: {
   if (!peer.tailBlockNum) {
     adjustedLowBlockNum = 0;
   }
-  const highBlockRatio = (peer.headBlockNum / headBlockNum) * 100;
+
   return (
     <>
-      <tr>
-        <td>{peer.host}</td>
+      <tr className={peer.deleted ? "peer-deleted" : ""}>
+        <td>{props.showKey ? peer.key : peer.host}</td>
         <td>
           <Tag>{peer.tier}</Tag>
         </td>
@@ -40,8 +41,13 @@ export function SearchPeerItem(props: {
               {formatNumberWithCommas(peer.shardSize)}
             </td>
             <td style={{ textAlign: "center" }}>
-              {peer.ready && <Tag color="#87d068">ready</Tag>}
-              {!peer.ready && <Tag color="#f50">not ready</Tag>}
+              {peer.ready && <Tag color="green">ready</Tag>}
+              {!peer.ready && peer.deleted && (
+                <Tag color="volcano">deleted</Tag>
+              )}
+              {!peer.ready && !peer.deleted && (
+                <Tag color="magenta">not ready</Tag>
+              )}
             </td>
             <td style={{ textAlign: "center" }}>
               <Moment format="YYYY-MM-DD HH:mm Z">{peer.boot}</Moment>

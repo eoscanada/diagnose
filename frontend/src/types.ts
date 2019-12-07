@@ -52,6 +52,7 @@ export interface PeerEventSocketMessage {
   type: "PeerEvent";
   payload: {
     EventName: string;
+    PeerKey: string;
     Peer: Peer;
   };
 }
@@ -71,6 +72,7 @@ export interface Peer {
   tailMoves: boolean;
   tier: number;
   deleted: boolean;
+  key: string;
 }
 
 export type SocketMessage =

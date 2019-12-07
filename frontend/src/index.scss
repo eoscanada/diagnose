@@ -18,7 +18,7 @@ code {
     margin-right: 10px;
   }
   span.black-range-num {
-    padding-right: 10px
+    padding-right: 10px;
   }
 }
 button.btn {
@@ -27,8 +27,14 @@ button.btn {
   span.svg {
     line-height: 1;
     svg {
-      height:22px;
+      height: 22px;
     }
   }
+}
 
+.peer-deleted {
+  td {
+    //background-color: #e8e8e8;
+    text-decoration: line-through;
+  }
 }

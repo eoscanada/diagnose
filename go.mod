@@ -6,7 +6,7 @@ require (
 	github.com/eoscanada/derr v0.3.9
 	github.com/eoscanada/dgrpc v0.0.0-20191115165705-af05d03bcdcb
 	github.com/eoscanada/dhammer v0.0.1
-	github.com/eoscanada/dmesh v0.0.0-20191203164226-b4e7b776545e
+	github.com/eoscanada/dmesh v0.0.0-20191207165858-769f5a73bbff
 	github.com/eoscanada/dstore v0.1.4
 	github.com/eoscanada/kvdb v0.0.12-0.20191121212719-a7cf2b597a07
 	github.com/eoscanada/logging v0.6.6

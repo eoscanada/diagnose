@@ -61,6 +61,7 @@ function stream(params: {
   route: string;
   onData: (results: SocketMessage) => void;
   onComplete: () => void;
+  onError?: () => void;
 }): WebSocket {
   const wsProto = API_SSL ? "wss" : "ws";
   const host = `${wsProto}://${API_URL}`;
@@ -68,6 +69,12 @@ function stream(params: {
 
   const ws = new WebSocket(url);
   ws.onopen = () => {};
+
+  ws.onerror = error => {
+    if (params.onError) {
+      params.onError();
+    }
+  };
 
   ws.onmessage = evt => {
     const resp = JSON.parse(evt.data) as SocketMessage;

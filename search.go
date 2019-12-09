@@ -9,14 +9,22 @@ import (
 	"time"
 
 	"github.com/eoscanada/dstore"
+	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
 
 func (d *Diagnose) SearchHoles(w http.ResponseWriter, req *http.Request) {
+	params := mux.Vars(req)
+
+	shardSize, err := strconv.ParseUint(params["shard_size"], 10, 32)
+	if err != nil {
+		shardSize = uint64(d.SearchShardSize)
+	}
+
 	zlog.Info("diagnose - search indexes",
 		zap.String("search_indexes_store_url", d.SearchIndexesStoreUrl),
-		zap.Uint32("shard_size", d.SearchShardSize),
-	)
+		zap.Uint32("default_shard_size", uint32(shardSize)))
+
 	conn, err := d.upgrader.Upgrade(w, req, nil)
 	if err != nil {
 		return
@@ -30,8 +38,9 @@ func (d *Diagnose) SearchHoles(w http.ResponseWriter, req *http.Request) {
 	var expected uint32
 	var count int
 	var baseNum32 uint32
+	seenFirstBlock := false
 
-	shardPrefix := fmt.Sprintf("shards-%d/", d.SearchShardSize)
+	shardPrefix := fmt.Sprintf("shards-%d/", shardSize)
 	startTime := time.Now()
 
 	currentStartBlk := uint32(0)
@@ -60,20 +69,38 @@ func (d *Diagnose) SearchHoles(w http.ResponseWriter, req *http.Request) {
 		count++
 		baseNum, _ := strconv.ParseUint(match[1], 10, 32)
 		baseNum32 = uint32(baseNum)
+
+		if !seenFirstBlock {
+			currentStartBlk = baseNum32
+			expected = baseNum32
+			seenFirstBlock = true
+		}
+
 		if baseNum32 != expected {
-			maybeSendWebsocket(conn, WebsocketTypeBlockRange, NewValidBlockRange(currentStartBlk, (expected-d.SearchShardSize), "valid range"))
-			maybeSendWebsocket(conn, WebsocketTypeBlockRange, NewMissingBlockRange(expected, (baseNum32-d.SearchShardSize), "hole found"))
+			maybeSendWebsocket(conn, WebsocketTypeBlockRange, NewValidBlockRange(currentStartBlk, (expected-uint32(shardSize)), "valid range"))
+			maybeSendWebsocket(conn, WebsocketTypeBlockRange, NewMissingBlockRange(expected, (baseNum32-uint32(shardSize)), "hole found"))
 			currentStartBlk = baseNum32
 		}
-		expected = baseNum32 + d.SearchShardSize
+		expected = baseNum32 + uint32(shardSize)
 
 		if count%1000 == 0 {
 			maybeSendWebsocket(conn, WebsocketTypeBlockRange, NewValidBlockRange(currentStartBlk, baseNum32, "valid range"))
-			currentStartBlk = baseNum32 + d.SearchShardSize
+			currentStartBlk = baseNum32 + uint32(shardSize)
 		}
 
 		return nil
 	})
 	maybeSendWebsocket(conn, WebsocketTypeBlockRange, NewValidBlockRange(currentStartBlk, baseNum32, "valid range"))
 	zlog.Info("diagnose - search indexes - completed")
+}
+
+func (d *Diagnose) GetShards() {
+	zlog.Info("diagnose - GetShards", zap.String("search_indexes_store_url", d.S earchIndexesStoreUrl))
+	shards, err := d.SearchStore.ListFiles("", "", 10)
+	if err != nil {
+		fmt.Println("Errors: ", err)
+	} else {
+		fmt.Println("Shards: ", shards)
+	}
+
 }

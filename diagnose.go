@@ -20,13 +20,14 @@ import (
 type Diagnose struct {
 	addr string
 
-	Protocol              string `json:"protocol,omitempty"`
-	Namespace             string `json:"namespace,omitempty"`
-	BlocksStoreUrl        string `json:"blockStoreUrl,omitempty"`
-	SearchIndexesStoreUrl string `json:"indexesStoreUrl,omitempty"`
-	SearchShardSize       uint32 `json:"shardSize,omitempty"`
-	KvdbConnectionInfo    string `json:"kvdbConnectionInfo,omitempty"`
-	DmeshServiceVersion   string `json:"dmeshServiceVersion,omitempty"`
+	Protocol              string   `json:"protocol,omitempty"`
+	Namespace             string   `json:"namespace,omitempty"`
+	BlocksStoreUrl        string   `json:"blockStoreUrl,omitempty"`
+	SearchIndexesStoreUrl string   `json:"indexesStoreUrl,omitempty"`
+	SearchShardSize       uint32   `json:"shardSize,omitempty"`
+	SearchShardSizes      []uint32 `json:"shardSizes,omitempty"`
+	KvdbConnectionInfo    string   `json:"kvdbConnectionInfo,omitempty"`
+	DmeshServiceVersion   string   `json:"dmeshServiceVersion,omitempty"`
 
 	BlocksStore dstore.Store
 	SearchStore dstore.Store
@@ -57,9 +58,8 @@ func (d *Diagnose) SetupRoutes(dev bool) {
 	apiRouter.Path("/diagnose/").Methods("POST").Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	apiRouter.Path("/config").Methods("Get").HandlerFunc(d.config)
 	apiRouter.Path("/block_holes").Methods("GET").HandlerFunc(d.BlockHoles)
-	apiRouter.Path("/search_holes").Methods("GET").HandlerFunc(d.SearchHoles)
+	apiRouter.Path("/search_holes").Queries("shard_size", "{shard_size:[0-9]+}").Methods("GET").HandlerFunc(d.SearchHoles)
 	apiRouter.Path("/search_peers").Methods("Get").HandlerFunc(d.searchPeers)
-
 	switch d.Protocol {
 	case "EOS":
 		apiRouter.Path("/kvdb_blk_holes").Methods("GET").HandlerFunc(d.EOSKVDBBlocks)
@@ -75,6 +75,8 @@ func (d *Diagnose) SetupRoutes(dev bool) {
 	coreRouter.PathPrefix("/").Handler(NewSPAHandler(d.serveFilePath, dev))
 
 	d.router = router
+
+	d.GetShards()
 }
 
 func (r *Diagnose) config(w http.ResponseWriter, req *http.Request) {

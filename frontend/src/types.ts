@@ -4,6 +4,7 @@ export interface DiagnoseConfig {
   blockStoreUrl: string;
   indexesStoreUrl: string;
   shardSize: number;
+  shardSizes: number[];
   kvdbConnectionInfo: string;
   dmeshServiceVersion: string;
 }

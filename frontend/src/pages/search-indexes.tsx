@@ -1,17 +1,28 @@
 import React, { useEffect, useState } from "react";
 import { RouteComponentProps, withRouter } from "react-router";
+
 import { MainLayout } from "../components/main-layout";
 import { useAppConfig } from "../hooks/dignose";
 import { BlockRange } from "../types";
 import { ApiService } from "../utils/api";
 import { BlockHolesList } from "../components/block-holes-list";
-import { Col, Row, Typography, Tag, PageHeader, Descriptions } from "antd";
+import {
+  Col,
+  Row,
+  Typography,
+  Tag,
+  PageHeader,
+  Descriptions,
+  Select
+} from "antd";
 import { Btn } from "../atoms/buttons";
 
+const { Option } = Select;
 const { Text } = Typography;
 
 function BaseSearchIndexesPage(props: RouteComponentProps): React.ReactElement {
   const [process, setProcess] = useState(false);
+  const [shardSize, setShardSize] = useState(5000);
   const [elapsed, setElapsed] = useState(0);
   const [ranges, setRanges] = useState<BlockRange[]>([]);
 
@@ -22,7 +33,7 @@ function BaseSearchIndexesPage(props: RouteComponentProps): React.ReactElement {
     if (process) {
       setRanges([]);
       stream = ApiService.stream({
-        route: "search_holes",
+        route: `search_holes?shard_size=${shardSize}`,
         onComplete: () => {
           setProcess(false);
         },
@@ -84,7 +95,19 @@ function BaseSearchIndexesPage(props: RouteComponentProps): React.ReactElement {
           </Descriptions.Item>
           <Descriptions.Item label="Shard size">
             {appConfig && (
-              <Tag color="#2db7f5">shard size: {appConfig.shardSize}</Tag>
+              <>
+                <Select
+                  defaultValue={shardSize}
+                  style={{ width: 120 }}
+                  onChange={(value: number) => {
+                    setShardSize(value);
+                  }}
+                >
+                  {appConfig.shardSizes.map(ss => {
+                    return <Option value={ss}>{ss}</Option>;
+                  })}
+                </Select>
+              </>
             )}
           </Descriptions.Item>
         </Descriptions>

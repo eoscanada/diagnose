@@ -95,7 +95,7 @@ func (d *Diagnose) SearchHoles(w http.ResponseWriter, req *http.Request) {
 }
 
 func (d *Diagnose) GetShards() {
-	zlog.Info("diagnose - GetShards", zap.String("search_indexes_store_url", d.S earchIndexesStoreUrl))
+	zlog.Info("diagnose - GetShards", zap.String("search_indexes_store_url", d.SearchIndexesStoreUrl))
 	shards, err := d.SearchStore.ListFiles("", "", 10)
 	if err != nil {
 		fmt.Println("Errors: ", err)

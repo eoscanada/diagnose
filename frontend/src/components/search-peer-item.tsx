@@ -51,6 +51,8 @@ export function SearchPeerItem(props: {
             </td>
             <td style={{ textAlign: "center" }}>
               <Moment format="YYYY-MM-DD HH:mm Z">{peer.boot}</Moment>
+              <br />
+              <Moment fromNow>{peer.boot}</Moment>
             </td>
           </>
         )}

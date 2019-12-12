@@ -12,6 +12,9 @@ export function SearchPeerList(props: {
 
   const peerItem = props.peers
     .sort((a: Peer, b: Peer) => {
+      if (a.tier == b.tier) {
+        return a.host < b.host ? -1 : 1;
+      }
       return a.tier < b.tier ? -1 : 1;
     })
     .map((peer: Peer) => (

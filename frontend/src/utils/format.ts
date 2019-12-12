@@ -8,6 +8,6 @@ export function formatNanoseconds(nano: number): string {
   return `${nano / 1000000000.0} s`;
 }
 
-export function formatTime(boot: string): string {
+export function formatTimeSince(boot: string): string {
   return boot;
 }

@@ -10,7 +10,6 @@ import {
   Col,
   Row,
   Typography,
-  Tag,
   PageHeader,
   Descriptions,
   Select
@@ -55,7 +54,7 @@ function BaseSearchIndexesPage(props: RouteComponentProps): React.ReactElement {
         stream.close();
       }
     };
-  }, [process]);
+  }, [process, shardSize]);
 
   return (
     <MainLayout config={appConfig} {...props}>

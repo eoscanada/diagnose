@@ -10,7 +10,7 @@ export function SearchPeerItem(props: {
   peer: Peer;
   headBlockNum: number;
   visualize: boolean;
-  showKey: boolean;
+  showOther: boolean;
 }): React.ReactElement {
   const { peer, headBlockNum } = props;
 
@@ -22,20 +22,32 @@ export function SearchPeerItem(props: {
   return (
     <>
       <tr className={peer.deleted ? "peer-deleted" : ""}>
-        <td>{props.showKey ? peer.key : peer.host}</td>
+        <td>{props.showOther ? peer.key : peer.host}</td>
         <td>
           <Tag>{peer.tier}</Tag>
         </td>
         {!props.visualize && (
           <>
             <td style={{ textAlign: "right" }}>
-              <BlockNum blockNum={peer.tailBlockNum} />
+              {props.showOther ? (
+                peer.tailBlockID
+              ) : (
+                <BlockNum blockNum={peer.tailBlockNum} />
+              )}
             </td>
             <td style={{ textAlign: "right" }}>
-              <BlockNum blockNum={peer.irrBlockNum} />
+              {props.showOther ? (
+                peer.irrBlockID
+              ) : (
+                <BlockNum blockNum={peer.irrBlockNum} />
+              )}
             </td>
             <td style={{ textAlign: "right" }}>
-              <BlockNum blockNum={peer.headBlockNum} />
+              {props.showOther ? (
+                peer.headBlockID
+              ) : (
+                <BlockNum blockNum={peer.headBlockNum} />
+              )}
             </td>
             <td style={{ textAlign: "center" }}>
               {formatNumberWithCommas(peer.shardSize)}

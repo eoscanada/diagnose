@@ -6,14 +6,7 @@ import { useAppConfig } from "../hooks/dignose";
 import { BlockRange } from "../types";
 import { ApiService } from "../utils/api";
 import { BlockHolesList } from "../components/block-holes-list";
-import {
-  Col,
-  Row,
-  Typography,
-  PageHeader,
-  Descriptions,
-  Select
-} from "antd";
+import { Col, Row, Typography, PageHeader, Descriptions, Select } from "antd";
 import { Btn } from "../atoms/buttons";
 
 const { Option } = Select;

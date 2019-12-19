@@ -60,6 +60,7 @@ export interface PeerEventSocketMessage {
 
 export interface Peer {
   boot: string;
+  tailBlockID: string;
   tailBlockNum: number;
   headBlockID: string;
   headBlockNum: number;

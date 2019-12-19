@@ -8,7 +8,7 @@ export function SearchPeerList(props: {
   visualize: boolean;
   headBlockNum: number;
 }): React.ReactElement {
-  const [showKey, setShowKey] = useState(false);
+  const [showOther, setShowOther] = useState(false);
 
   const peerItem = props.peers
     .sort((a: Peer, b: Peer) => {
@@ -23,7 +23,7 @@ export function SearchPeerList(props: {
         peer={peer}
         headBlockNum={props.headBlockNum}
         visualize={props.visualize}
-        showKey={showKey}
+        showOther={showOther}
       />
     ));
 
@@ -34,14 +34,21 @@ export function SearchPeerList(props: {
           <thead className="ant-table-thead">
             <tr>
               <th>
-                <Icon type="key" onClick={() => setShowKey(!showKey)} /> Host
+                <Icon type="key" onClick={() => setShowOther(!showOther)} />{" "}
+                {showOther ? "Addr" : "Host"}
               </th>
               <th>Tier</th>
               {!props.visualize && (
                 <>
-                  <th style={{ textAlign: "right" }}>Tail Block</th>
-                  <th style={{ textAlign: "right" }}>IRR Block</th>
-                  <th style={{ textAlign: "right" }}>Head Block</th>
+                  <th style={{ textAlign: "right" }}>
+                    {showOther ? "Tail Id" : "Tail Block"}
+                  </th>
+                  <th style={{ textAlign: "right" }}>
+                    {showOther ? "IRR Id" : "IRR Block"}
+                  </th>
+                  <th style={{ textAlign: "right" }}>
+                    {showOther ? "Head Id" : "Head Block"}
+                  </th>
                   <th style={{ textAlign: "center" }}>Shard Size</th>
                   <th style={{ textAlign: "center" }}>Status</th>
                   <th style={{ textAlign: "center" }}>Boot Time</th>

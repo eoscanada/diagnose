@@ -9,19 +9,16 @@ import (
 	"time"
 
 	"github.com/eoscanada/dstore"
-	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
 
 func (d *Diagnose) SearchHoles(w http.ResponseWriter, req *http.Request) {
-	params := mux.Vars(req)
-
-	shardSize, err := strconv.ParseUint(params["shard_size"], 10, 32)
+	shardSize, err := strconv.ParseUint(getQueryParam(req, "shard_size"), 10, 32)
 	if err != nil {
 		shardSize = uint64(d.SearchShardSize)
 	}
 
-	indexesURL := params["indexes_url"]
+	indexesURL := getQueryParam(req, "indexes_url")
 	if indexesURL == "" {
 		indexesURL = d.SearchIndexesStoreURL
 	}

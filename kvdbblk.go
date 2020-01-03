@@ -12,7 +12,6 @@ import (
 	"github.com/eoscanada/kvdb"
 	"github.com/eoscanada/kvdb/eosdb"
 	"github.com/eoscanada/kvdb/ethdb"
-	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
 
@@ -391,9 +390,7 @@ func (d *Diagnose) ETHKVDBBlockValidation(w http.ResponseWriter, req *http.Reque
 }
 
 func (d *Diagnose) extractConnectionInfo(w http.ResponseWriter, req *http.Request) *kvdb.ConnectionInfo {
-	params := mux.Vars(req)
-
-	connectionInfo := params["connection_info"]
+	connectionInfo := getQueryParam(req, "connection_info")
 	if connectionInfo == "" {
 		connectionInfo = d.KvdbConnectionInfo
 	}

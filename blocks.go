@@ -8,14 +8,11 @@ import (
 	"time"
 
 	"github.com/eoscanada/dstore"
-	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
 
 func (d *Diagnose) BlockHoles(w http.ResponseWriter, req *http.Request) {
-	params := mux.Vars(req)
-
-	blocksURL := params["blocks_url"]
+	blocksURL := getQueryParam(req, "blocks_url")
 	if blocksURL == "" {
 		blocksURL = d.BlocksStoreURL
 	}

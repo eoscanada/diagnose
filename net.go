@@ -3,10 +3,21 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"net/http"
 
 	"github.com/gorilla/websocket"
 	"go.uber.org/zap"
 )
+
+func getQueryParam(r *http.Request, name string) string {
+	params := r.URL.Query()
+	paramValues := params[name]
+	if len(paramValues) <= 0 {
+		return ""
+	}
+
+	return paramValues[0]
+}
 
 func readWebsocket(conn *websocket.Conn, cancel context.CancelFunc) {
 	for {

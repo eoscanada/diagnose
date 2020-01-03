@@ -1,45 +1,46 @@
-import React from "react";
-import { Icon, List } from "antd";
-import { BlockRange } from "../types";
-import { BlockNumRange } from "../atoms/block-num-range";
-import { BlockNum } from "../atoms/block-num";
-import { formatNanoseconds } from "../utils/format";
+import React from "react"
+import { Icon, List } from "antd"
+import { BlockRange } from "../types"
+import { BlockNumRange } from "../atoms/block-num-range"
+import { BlockNum } from "../atoms/block-num"
+import { formatNanoseconds } from "../utils/format"
 
-export function BlockHolesList(props: {
-  ranges: BlockRange[];
-  inv?: boolean;
-  elapsed?: number;
-}): React.ReactElement {
-  let header = <div />;
+type Props = {
+  ranges: BlockRange[]
+  inv?: boolean
+  elapsed?: number
+}
 
-  if (props.ranges.length > 0) {
-    if (props.inv) {
+export const BlockHolesList: React.FC<Props> = ({ ranges, inv, elapsed }) => {
+  let header = <div />
+
+  if (ranges.length > 0) {
+    if (inv) {
       header = (
         <div>
-          Start block: <BlockNum blockNum={props.ranges[0].endBlock} />
+          Start block: <BlockNum blockNum={ranges[0].endBlock} />
           <span
             style={{
               float: "right"
             }}
           >
-            elapsed: {formatNanoseconds(props.elapsed || 0)}
+            elapsed: {formatNanoseconds(elapsed || 0)}
           </span>
         </div>
-      );
+      )
     } else {
       header = (
         <div>
-          Validated up to block log:{" "}
-          <BlockNum blockNum={props.ranges[props.ranges.length - 1].endBlock} />
+          Validated up to block log: <BlockNum blockNum={ranges[ranges.length - 1].endBlock} />
           <span
             style={{
               float: "right"
             }}
           >
-            elapsed: {formatNanoseconds(props.elapsed || 0)}
+            elapsed: {formatNanoseconds(elapsed || 0)}
           </span>
         </div>
-      );
+      )
     }
   }
 
@@ -64,16 +65,12 @@ export function BlockHolesList(props: {
             />
           )}
 
-          <BlockNumRange
-            startBlockNum={range.startBlock}
-            endBlockNum={range.endBlock}
-            inv={props.inv}
-          />
+          <BlockNumRange startBlockNum={range.startBlock} endBlockNum={range.endBlock} inv={inv} />
           {range.message}
         </div>
       </List.Item>
-    );
-  };
+    )
+  }
 
   return (
     <div>
@@ -81,9 +78,9 @@ export function BlockHolesList(props: {
         size="small"
         header={header}
         bordered
-        dataSource={props.ranges}
-        renderItem={item => renderBlockRange(item)}
+        dataSource={ranges}
+        renderItem={(item) => renderBlockRange(item)}
       />
     </div>
-  );
+  )
 }

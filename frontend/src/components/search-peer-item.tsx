@@ -1,65 +1,47 @@
-import React from "react";
-import { Tag, Slider } from "antd";
-import { Peer } from "../types";
-import { BlockNum } from "../atoms/block-num";
-import { formatNumberWithCommas } from "../utils/format";
-import Moment from "react-moment";
-import "moment-timezone";
+import React from "react"
+import { Tag, Slider } from "antd"
+import { Peer } from "../types"
+import { BlockNum } from "../atoms/block-num"
+import { formatNumberWithCommas } from "../utils/format"
+import Moment from "react-moment"
+import "moment-timezone"
 
-export function SearchPeerItem(props: {
-  peer: Peer;
-  headBlockNum: number;
-  visualize: boolean;
-  showOther: boolean;
-}): React.ReactElement {
-  const { peer, headBlockNum } = props;
+type Props = {
+  peer: Peer
+  headBlockNum: number
+  visualize: boolean
+  showOther: boolean
+}
 
-  let adjustedLowBlockNum = peer.tailBlockNum;
+export const SearchPeerItem: React.FC<Props> = ({ peer, headBlockNum, visualize, showOther }) => {
+  let adjustedLowBlockNum = peer.tailBlockNum
   if (!peer.tailBlockNum) {
-    adjustedLowBlockNum = 0;
+    adjustedLowBlockNum = 0
   }
 
   return (
     <>
       <tr className={peer.deleted ? "peer-deleted" : ""}>
-        <td>{props.showOther ? peer.key : peer.host}</td>
+        <td>{showOther ? peer.key : peer.host}</td>
         <td>
           <Tag>{peer.tier}</Tag>
         </td>
-        {!props.visualize && (
+        {!visualize && (
           <>
             <td style={{ textAlign: "right" }}>
-              {props.showOther ? (
-                peer.tailBlockID
-              ) : (
-                <BlockNum blockNum={peer.tailBlockNum} />
-              )}
+              {showOther ? peer.tailBlockID : <BlockNum blockNum={peer.tailBlockNum} />}
             </td>
             <td style={{ textAlign: "right" }}>
-              {props.showOther ? (
-                peer.irrBlockID
-              ) : (
-                <BlockNum blockNum={peer.irrBlockNum} />
-              )}
+              {showOther ? peer.irrBlockID : <BlockNum blockNum={peer.irrBlockNum} />}
             </td>
             <td style={{ textAlign: "right" }}>
-              {props.showOther ? (
-                peer.headBlockID
-              ) : (
-                <BlockNum blockNum={peer.headBlockNum} />
-              )}
+              {showOther ? peer.headBlockID : <BlockNum blockNum={peer.headBlockNum} />}
             </td>
-            <td style={{ textAlign: "center" }}>
-              {formatNumberWithCommas(peer.shardSize)}
-            </td>
+            <td style={{ textAlign: "center" }}>{formatNumberWithCommas(peer.shardSize)}</td>
             <td style={{ textAlign: "center" }}>
               {peer.ready && <Tag color="green">ready</Tag>}
-              {!peer.ready && peer.deleted && (
-                <Tag color="volcano">deleted</Tag>
-              )}
-              {!peer.ready && !peer.deleted && (
-                <Tag color="magenta">not ready</Tag>
-              )}
+              {!peer.ready && peer.deleted && <Tag color="volcano">deleted</Tag>}
+              {!peer.ready && !peer.deleted && <Tag color="magenta">not ready</Tag>}
             </td>
             <td style={{ textAlign: "center" }}>
               <Moment format="YYYY-MM-DD HH:mm Z">{peer.boot}</Moment>
@@ -68,7 +50,7 @@ export function SearchPeerItem(props: {
             </td>
           </>
         )}
-        {props.visualize && (
+        {visualize && (
           <>
             <td>
               <Slider
@@ -91,5 +73,5 @@ export function SearchPeerItem(props: {
         </td>
       </tr>
     </>
-  );
+  )
 }

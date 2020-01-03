@@ -6,9 +6,6 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/eoscanada/dstore"
-	"github.com/eoscanada/kvdb/eosdb"
-	"github.com/eoscanada/kvdb/ethdb"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
@@ -22,17 +19,12 @@ type Diagnose struct {
 
 	Protocol              string   `json:"protocol,omitempty"`
 	Namespace             string   `json:"namespace,omitempty"`
-	BlocksStoreUrl        string   `json:"blockStoreUrl,omitempty"`
-	SearchIndexesStoreUrl string   `json:"indexesStoreUrl,omitempty"`
+	BlocksStoreURL        string   `json:"blockStoreUrl,omitempty"`
+	SearchIndexesStoreURL string   `json:"indexesStoreUrl,omitempty"`
 	SearchShardSize       uint32   `json:"shardSize,omitempty"`
 	SearchShardSizes      []uint32 `json:"shardSizes,omitempty"`
 	KvdbConnectionInfo    string   `json:"kvdbConnectionInfo,omitempty"`
 	DmeshServiceVersion   string   `json:"dmeshServiceVersion,omitempty"`
-
-	BlocksStore dstore.Store
-	SearchStore dstore.Store
-	EOSdb       *eosdb.EOSDatabase
-	ETHdb       *ethdb.ETHDatabase
 
 	router        *mux.Router
 	upgrader      *websocket.Upgrader
@@ -75,8 +67,6 @@ func (d *Diagnose) SetupRoutes(dev bool) {
 	coreRouter.PathPrefix("/").Handler(NewSPAHandler(d.serveFilePath, dev))
 
 	d.router = router
-
-	d.GetShards()
 }
 
 func (r *Diagnose) config(w http.ResponseWriter, req *http.Request) {

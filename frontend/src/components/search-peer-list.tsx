@@ -1,31 +1,33 @@
-import React, { useState } from "react";
-import { Icon } from "antd";
-import { Peer } from "../types";
-import { SearchPeerItem } from "./search-peer-item";
+import React, { useState } from "react"
+import { Icon } from "antd"
+import { Peer } from "../types"
+import { SearchPeerItem } from "./search-peer-item"
 
-export function SearchPeerList(props: {
-  peers: Peer[];
-  visualize: boolean;
-  headBlockNum: number;
-}): React.ReactElement {
-  const [showOther, setShowOther] = useState(false);
+type Props = {
+  peers: Peer[]
+  visualize: boolean
+  headBlockNum: number
+}
 
-  const peerItem = props.peers
+export const SearchPeerList: React.FC<Props> = ({ peers, headBlockNum, visualize }) => {
+  const [showOther, setShowOther] = useState(false)
+
+  const peerItem = peers
     .sort((a: Peer, b: Peer) => {
       if (a.tier === b.tier) {
-        return a.host < b.host ? -1 : 1;
+        return a.host < b.host ? -1 : 1
       }
-      return a.tier < b.tier ? -1 : 1;
+      return a.tier < b.tier ? -1 : 1
     })
     .map((peer: Peer) => (
       <SearchPeerItem
         key={`${peer.host}-${peer.key}`}
         peer={peer}
-        headBlockNum={props.headBlockNum}
-        visualize={props.visualize}
+        headBlockNum={headBlockNum}
+        visualize={visualize}
         showOther={showOther}
       />
-    ));
+    ))
 
   return (
     <div>
@@ -38,23 +40,17 @@ export function SearchPeerList(props: {
                 {showOther ? "Addr" : "Host"}
               </th>
               <th>Tier</th>
-              {!props.visualize && (
+              {!visualize && (
                 <>
-                  <th style={{ textAlign: "right" }}>
-                    {showOther ? "Tail Id" : "Tail Block"}
-                  </th>
-                  <th style={{ textAlign: "right" }}>
-                    {showOther ? "IRR Id" : "IRR Block"}
-                  </th>
-                  <th style={{ textAlign: "right" }}>
-                    {showOther ? "Head Id" : "Head Block"}
-                  </th>
+                  <th style={{ textAlign: "right" }}>{showOther ? "Tail Id" : "Tail Block"}</th>
+                  <th style={{ textAlign: "right" }}>{showOther ? "IRR Id" : "IRR Block"}</th>
+                  <th style={{ textAlign: "right" }}>{showOther ? "Head Id" : "Head Block"}</th>
                   <th style={{ textAlign: "center" }}>Shard Size</th>
                   <th style={{ textAlign: "center" }}>Status</th>
                   <th style={{ textAlign: "center" }}>Boot Time</th>
                 </>
               )}
-              {props.visualize && <th style={{ width: "100%" }}></th>}
+              {visualize && <th style={{ width: "100%" }}></th>}
               <>
                 <th style={{ textAlign: "center" }}>Features</th>
                 <th></th>
@@ -65,5 +61,5 @@ export function SearchPeerList(props: {
         </table>
       </div>
     </div>
-  );
+  )
 }

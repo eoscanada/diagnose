@@ -1,18 +1,12 @@
 import React from "react"
-import { Menu} from 'antd';
-import { Link } from "react-router-dom";
-import { Paths } from '../router/paths';
+import { Menu } from "antd"
+import { Link } from "react-router-dom"
+import { Paths } from "../router/paths"
 
-export function Navigation(props: {
-  currentPath: string
-}): React.ReactElement {
+export const Navigation: React.FC<{ currentPath: string }> = ({ currentPath }) => {
   return (
     <div>
-      <Menu
-        mode="inline"
-        defaultSelectedKeys={[props.currentPath]}
-        style={{ height: '100%' }}
-      >
+      <Menu mode="inline" defaultSelectedKeys={[currentPath]} style={{ height: "100%" }}>
         <Menu.Item key={Paths.blocks}>
           <Link to={Paths.blocks}>Block Logs</Link>
         </Menu.Item>
@@ -32,5 +26,3 @@ export function Navigation(props: {
     </div>
   )
 }
-
-

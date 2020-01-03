@@ -1,96 +1,94 @@
-import React, { useState, useEffect } from "react";
-import { withRouter, RouteComponentProps } from "react-router";
-import { BlockRange } from "../types";
-import { ApiService } from "../utils/api";
-import { useAppConfig } from "../hooks/dignose";
-import { BlockHolesList } from "../components/block-holes-list";
-import { MainLayout } from "../components/main-layout";
-import { Typography, Row, Col, PageHeader, Descriptions } from "antd";
-import { Btn } from "../atoms/buttons";
+import React, { useState, useEffect } from "react"
+import { BlockRange } from "../types"
+import { ApiService } from "../utils/api"
+import { BlockHolesList } from "../components/block-holes-list"
+import { MainLayout } from "../components/main-layout"
+import { Typography, Row, Col, PageHeader, Descriptions, Icon } from "antd"
+import { Btn } from "../atoms/buttons"
+import { useStore } from "../store"
+import { CreateInputModalForm } from "../components/input-modal"
+import queryString from "query-string"
 
-const { Text } = Typography;
+const { Text } = Typography
 
-function BaseKvdbBlocksPage(props: RouteComponentProps): React.ReactElement {
-  const VALIDATE_BLOCKS = "validating_blocks";
-  const BLOCK_HOLE = "block_holes";
+type ProcessState = "block_holes" | "validating_blocks"
 
-  const [process, setProcess] = useState("");
-  const [elapsed, setElapsed] = useState(0);
-  const [title, setTitle] = useState("");
-  const [ranges, setRanges] = useState<BlockRange[]>([]);
+const EditKvdbConnectionModal = CreateInputModalForm({ name: "kvdb_blocks_edit" })
 
-  const appConfig = useAppConfig();
+export const KvdbBlocksPage: React.FC = () => {
+  const [process, setProcess] = useState<ProcessState | undefined>()
+  const [elapsed, setElapsed] = useState(0)
+  const [title, setTitle] = useState("")
+  const [ranges, setRanges] = useState<BlockRange[]>([])
+  const [editKvdbConnectionModalVisible, setEditKvdbConnectionModalVisible] = useState(false)
 
-  const processingBlockHoles = (): boolean => {
-    return process === BLOCK_HOLE;
-  };
-
-  const validatingBlocks = (): boolean => {
-    return process === VALIDATE_BLOCKS;
-  };
+  const [{ config: appConfig }, { setConfig }] = useStore()
 
   useEffect(() => {
-    let stream: WebSocket;
+    let stream: WebSocket
+    if (process !== undefined) {
+      setRanges([])
+      setElapsed(0)
 
-    if (process !== "") {
-      setRanges([]);
-      setElapsed(0);
-      if (processingBlockHoles()) {
-        setTitle("Processing Block Holes");
+      if (process === "block_holes") {
+        setTitle("Processing Block Holes")
         stream = ApiService.stream({
-          route: "kvdb_blk_holes",
+          route:
+            "kvdb_blk_holes?" +
+            queryString.stringify({ connection_info: appConfig.kvdbConnectionInfo }),
+
           onComplete: () => {
-            setProcess("");
+            setProcess(undefined)
           },
-          onData: resp => {
+          onData: (resp) => {
             switch (resp.type) {
               case "Transaction":
-                break;
+                break
               case "BlockRange":
-                setRanges(currentRanges => [...currentRanges, resp.payload]);
-                break;
+                setRanges((currentRanges) => [...currentRanges, resp.payload])
+                break
               case "Message":
-                break;
+                break
               case "Progress":
-                setElapsed(resp.payload.elapsed);
-                break;
+                setElapsed(resp.payload.elapsed)
+                break
             }
           }
-        });
-      } else if (validatingBlocks()) {
-        setTitle("Validating Blocks");
+        })
+      } else if (process === "validating_blocks") {
+        setTitle("Validating Blocks")
         stream = ApiService.stream({
           route: "kvdb_blk_validation",
           onComplete: () => {
-            setProcess("");
+            setProcess(undefined)
           },
-          onData: resp => {
+          onData: (resp) => {
             switch (resp.type) {
               case "Transaction":
-                break;
+                break
               case "BlockRange":
-                setRanges(currentRanges => [...currentRanges, resp.payload]);
-                break;
+                setRanges((currentRanges) => [...currentRanges, resp.payload])
+                break
               case "Message":
-                break;
+                break
               case "Progress":
-                setElapsed(resp.payload.elapsed);
-                break;
+                setElapsed(resp.payload.elapsed)
+                break
             }
           }
-        });
+        })
       }
     }
 
     return () => {
       if (stream) {
-        stream.close();
+        stream.close()
       }
-    };
-  }, [process]);
+    }
+  }, [process, appConfig.kvdbConnectionInfo])
 
   return (
-    <MainLayout config={appConfig} {...props}>
+    <MainLayout>
       <PageHeader
         title="KVDB Blocks"
         subTitle="hole checker & validator for KVDB blocks"
@@ -99,29 +97,48 @@ function BaseKvdbBlocksPage(props: RouteComponentProps): React.ReactElement {
             key={1}
             stopText="Stop Hole Checker"
             startText="Check Block Holes"
-            loading={processingBlockHoles()}
-            onStart={() => setProcess(BLOCK_HOLE)}
-            onStop={() => setProcess("")}
+            loading={process === "block_holes"}
+            onStart={() => setProcess("block_holes")}
+            onStop={() => setProcess(undefined)}
           />,
           <Btn
             key={2}
             stopText="Stop Validation"
             startText="Validate Blocks"
-            loading={validatingBlocks()}
-            onStart={e => {
-              e.preventDefault();
-              setProcess(VALIDATE_BLOCKS);
+            loading={process === "validating_blocks"}
+            onStart={(e) => {
+              e.preventDefault()
+              setProcess("validating_blocks")
             }}
-            onStop={e => {
-              e.preventDefault();
-              setProcess("");
+            onStop={(e) => {
+              e.preventDefault()
+              setProcess(undefined)
             }}
           />
         ]}
       >
         <Descriptions size="small" column={3}>
           <Descriptions.Item label="Connection Info">
-            {appConfig && <Text code>{appConfig.kvdbConnectionInfo}</Text>}
+            {appConfig.kvdbConnectionInfo && <Text code>{appConfig.kvdbConnectionInfo}</Text>}
+            &nbsp;
+            <Icon
+              type="edit"
+              theme="outlined"
+              onClick={() => {
+                setEditKvdbConnectionModalVisible(true)
+              }}
+            />
+            <EditKvdbConnectionModal
+              initialInput={appConfig.kvdbConnectionInfo}
+              visible={editKvdbConnectionModalVisible}
+              onInput={(input) => {
+                setConfig({ kvdbConnectionInfo: input })
+                setEditKvdbConnectionModalVisible(false)
+              }}
+              onCancel={() => {
+                setEditKvdbConnectionModalVisible(false)
+              }}
+            />
           </Descriptions.Item>
         </Descriptions>
       </PageHeader>
@@ -132,7 +149,5 @@ function BaseKvdbBlocksPage(props: RouteComponentProps): React.ReactElement {
         </Col>
       </Row>
     </MainLayout>
-  );
+  )
 }
-
-export const KvdbBlocksPage = withRouter(BaseKvdbBlocksPage);

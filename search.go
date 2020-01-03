@@ -21,9 +21,15 @@ func (d *Diagnose) SearchHoles(w http.ResponseWriter, req *http.Request) {
 		shardSize = uint64(d.SearchShardSize)
 	}
 
+	indexesURL := params["indexes_url"]
+	if indexesURL == "" {
+		indexesURL = d.SearchIndexesStoreURL
+	}
+
 	zlog.Info("diagnose - search indexes",
-		zap.String("search_indexes_store_url", d.SearchIndexesStoreUrl),
-		zap.Uint32("default_shard_size", uint32(shardSize)))
+		zap.String("indexes_store_url", indexesURL),
+		zap.Uint32("default_shard_size", uint32(shardSize)),
+	)
 
 	conn, err := d.upgrader.Upgrade(w, req, nil)
 	if err != nil {
@@ -47,8 +53,15 @@ func (d *Diagnose) SearchHoles(w http.ResponseWriter, req *http.Request) {
 
 	go readWebsocket(conn, cancel)
 
+	zlog.Info("creating indexes store")
+	searchStore, err := dstore.NewSimpleStore(indexesURL)
+	if err != nil {
+		maybeSendWebsocket(conn, WebsocketTypeMessage, Message{Msg: err.Error()})
+		return
+	}
+
 	maybeSendWebsocket(conn, WebsocketTypeProgress, Progress{Elapsed: time.Now().Sub(startTime)})
-	_ = d.SearchStore.Walk(shardPrefix, "", func(filename string) error {
+	_ = searchStore.Walk(shardPrefix, "", func(filename string) error {
 
 		if count%5000 == 0 {
 			maybeSendWebsocket(conn, WebsocketTypeProgress, Progress{Elapsed: time.Now().Sub(startTime)})
@@ -92,15 +105,4 @@ func (d *Diagnose) SearchHoles(w http.ResponseWriter, req *http.Request) {
 	})
 	maybeSendWebsocket(conn, WebsocketTypeBlockRange, NewValidBlockRange(currentStartBlk, baseNum32, "valid range"))
 	zlog.Info("diagnose - search indexes - completed")
-}
-
-func (d *Diagnose) GetShards() {
-	zlog.Info("diagnose - GetShards", zap.String("search_indexes_store_url", d.SearchIndexesStoreUrl))
-	shards, err := d.SearchStore.ListFiles("", "", 10)
-	if err != nil {
-		fmt.Println("Errors: ", err)
-	} else {
-		fmt.Println("Shards: ", shards)
-	}
-
 }

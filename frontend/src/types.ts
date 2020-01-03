@@ -1,80 +1,80 @@
 export interface DiagnoseConfig {
-  protocol: string;
-  namespace: string;
-  blockStoreUrl: string;
-  indexesStoreUrl: string;
-  shardSize: number;
-  shardSizes: number[];
-  kvdbConnectionInfo: string;
-  dmeshServiceVersion: string;
+  protocol?: string
+  namespace?: string
+  blockStoreUrl?: string
+  indexesStoreUrl?: string
+  shardSize?: number
+  shardSizes?: number[]
+  kvdbConnectionInfo?: string
+  dmeshServiceVersion?: string
 }
 
-export type Progress = ProgressSocketMessage["payload"];
+export type Progress = ProgressSocketMessage["payload"]
 export interface ProgressSocketMessage {
-  type: "Progress";
+  type: "Progress"
   payload: {
-    elapsed: number;
-    totalIteration: number;
-    currentIteration: number;
-  };
+    elapsed: number
+    totalIteration: number
+    currentIteration: number
+  }
 }
 
-export type Transaction = TransactionSocketMessage["payload"];
+export type Transaction = TransactionSocketMessage["payload"]
 export interface TransactionSocketMessage {
-  type: "Transaction";
+  type: "Transaction"
   payload: {
-    prefix: string;
-    id: string;
-    blockNum: number;
-  };
+    prefix: string
+    id: string
+    blockNum: number
+  }
 }
 
-export type BlockRange = BlockRangeSocketMessage["payload"];
+export type BlockRange = BlockRangeSocketMessage["payload"]
 export interface BlockRangeSocketMessage {
-  type: "BlockRange";
+  type: "BlockRange"
   payload: {
-    startBlock: number;
-    endBlock: number;
-    message: string;
-    status: "valid" | "hole";
-  };
+    startBlock: number
+    endBlock: number
+    message: string
+    status: "valid" | "hole"
+  }
 }
 
-export type Message = MessageSocketMessage["payload"];
+export type Message = MessageSocketMessage["payload"]
 export interface MessageSocketMessage {
-  type: "Message";
+  type: "Message"
   payload: {
-    message: string;
-  };
+    message: string
+  }
 }
 
-export type PeerEvent = PeerEventSocketMessage["payload"];
+export type PeerEvent = PeerEventSocketMessage["payload"]
 export interface PeerEventSocketMessage {
-  type: "PeerEvent";
+  type: "PeerEvent"
   payload: {
-    EventName: string;
-    PeerKey: string;
-    Peer: Peer;
-  };
+    EventName: string
+    PeerKey: string
+    Peer: Peer
+  }
 }
 
 export interface Peer {
-  boot: string;
-  tailBlockID: string;
-  tailBlockNum: number;
-  headBlockID: string;
-  headBlockNum: number;
-  headMoves: boolean;
-  host: string;
-  irrBlockID: string;
-  irrBlockNum: number;
-  ready: boolean;
-  reversible: boolean;
-  shardSize: number;
-  tailMoves: boolean;
-  tier: number;
-  deleted: boolean;
-  key: string;
+  boot: string
+  tailBlockID: string
+  tailBlockNum: number
+  headBlockID: string
+  headBlockNum: number
+  headMoves: boolean
+  host: string
+  irrBlockID: string
+  irrBlockNum: number
+  ready: boolean
+  reversible: boolean
+  shardSize: number
+  tailMoves: boolean
+  tier: number
+  deleted: boolean
+  key: string
 }
 
 export type SocketMessage =
@@ -82,10 +82,16 @@ export type SocketMessage =
   | BlockRangeSocketMessage
   | MessageSocketMessage
   | PeerEventSocketMessage
-  | ProgressSocketMessage;
+  | ProgressSocketMessage
 
-export interface ApiResponse<T> {
-  data: T;
-  type: string;
-  errors: string[] | undefined;
+export type ApiResponse<T> = DataApiResponse<T> | ErrorApiResponse
+
+export interface DataApiResponse<T> {
+  data: T
+  type: "data"
+}
+
+export interface ErrorApiResponse {
+  type: "error"
+  errors: any[]
 }

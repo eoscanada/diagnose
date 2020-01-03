@@ -1,17 +1,10 @@
-import React from "react";
-import { Row, Col, Tag } from "antd";
-import { LogoDfuse } from "../atoms/svg";
-import { DiagnoseConfig } from "../types";
+import React from "react"
+import { Row, Col, Tag } from "antd"
+import { LogoDfuse } from "../atoms/svg"
+import { useStore } from "../store"
 
-export function TopHeader(props: {
-  config: DiagnoseConfig | undefined;
-}): React.ReactElement {
-  let protocol = "";
-  let namespace = "";
-  if (props.config) {
-    protocol = props.config.protocol;
-    namespace = props.config.namespace;
-  }
+export const TopHeader: React.FC = () => {
+  const [store] = useStore()
 
   return (
     <div>
@@ -20,12 +13,12 @@ export function TopHeader(props: {
           <LogoDfuse fill="#EC5664" height="44px" />
         </Col>
         <Col span={8} style={{ textAlign: "center" }}>
-          Diagnose {protocol}
+          Diagnose {store.config.protocol || "Unknwon"}
         </Col>
         <Col span={8} style={{ textAlign: "right" }}>
-          <Tag>{namespace}</Tag>
+          <Tag>{store.config.namespace || "Unknown"}</Tag>
         </Col>
       </Row>
     </div>
-  );
+  )
 }

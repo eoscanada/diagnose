@@ -8,15 +8,24 @@ import (
 	"time"
 
 	"github.com/eoscanada/dstore"
+	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
 
 func (d *Diagnose) BlockHoles(w http.ResponseWriter, req *http.Request) {
+	params := mux.Vars(req)
+
+	blocksURL := params["blocks_url"]
+	if blocksURL == "" {
+		blocksURL = d.BlocksStoreURL
+	}
+
 	const fileBlockSize = 100
 	zlog.Info("diagnose - block holes",
-		zap.String("block_store_url", d.BlocksStoreUrl),
+		zap.String("block_store_url", blocksURL),
 		zap.Uint32("block_logs_size", fileBlockSize),
 	)
+
 	conn, err := d.upgrader.Upgrade(w, req, nil)
 	if err != nil {
 		return
@@ -35,8 +44,15 @@ func (d *Diagnose) BlockHoles(w http.ResponseWriter, req *http.Request) {
 
 	go readWebsocket(conn, cancel)
 
+	zlog.Info("creating blocks store")
+	blocksStore, err := dstore.NewDBinStore(blocksURL)
+	if err != nil {
+		maybeSendWebsocket(conn, WebsocketTypeMessage, Message{Msg: err.Error()})
+		return
+	}
+
 	maybeSendWebsocket(conn, WebsocketTypeProgress, Progress{Elapsed: time.Now().Sub(startTime)})
-	d.BlocksStore.Walk("", "", func(filename string) error {
+	blocksStore.Walk("", "", func(filename string) error {
 		select {
 		case <-ctx.Done():
 			zlog.Debug("context canceled")

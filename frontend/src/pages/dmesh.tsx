@@ -1,121 +1,111 @@
-import React, { useEffect, useState } from "react";
-import { withRouter, RouteComponentProps } from "react-router";
-import {
-  Row,
-  Col,
-  Typography,
-  PageHeader,
-  Descriptions,
-  Tag,
-  Icon,
-  Button
-} from "antd";
-import { Peer } from "../types";
-import { ApiService } from "../utils/api";
-import { useAppConfig } from "../hooks/dignose";
-import { SearchPeerList } from "../components/search-peer-list";
-import { MainLayout } from "../components/main-layout";
+import React, { useEffect, useState } from "react"
+import { Row, Col, Typography, PageHeader, Descriptions, Tag, Icon, Button } from "antd"
+import { Peer } from "../types"
+import { ApiService } from "../utils/api"
+import { SearchPeerList } from "../components/search-peer-list"
+import { MainLayout } from "../components/main-layout"
+import { useStore } from "../store"
 
-const { Text } = Typography;
+const { Text } = Typography
 
-function BaseDmeshPage(props: RouteComponentProps): React.ReactElement {
-  const [visualize, setVisualize] = useState(false);
-  const [connected, setConnected] = useState(false);
-  const [peers, setPeers] = useState<Peer[]>([]);
-  const [headBlockNum, setHeadBlockNum] = useState(0);
+export const DmeshPage: React.FC = () => {
+  const [visualize, setVisualize] = useState(false)
+  const [connected, setConnected] = useState(false)
+  const [peers, setPeers] = useState<Peer[]>([])
+  const [headBlockNum, setHeadBlockNum] = useState(0)
 
-  const appConfig = useAppConfig();
-
-  const deletePeer = (peer: Peer) => {
-    setPeers(currentPeers => {
-      const newCurrentPeers = currentPeers.map(peerItem => {
-        if (peerItem.key === peer.key) {
-          return { ...peerItem, deleted: true, ready: false };
-        }
-        return peerItem;
-      });
-      return newCurrentPeers;
-    });
-  };
-
-  const updatePeer = (peer: Peer) => {
-    if (peer.headBlockNum > headBlockNum) {
-      setHeadBlockNum(peer.headBlockNum);
-    }
-    setPeers(currentPeers => {
-      let foundPeer = false;
-      let newCurrentPeers = currentPeers.map(peerItem => {
-        if (peerItem.key === peer.key) {
-          foundPeer = true;
-          return peer;
-        }
-        return peerItem;
-      });
-      if (!foundPeer) {
-        newCurrentPeers = [...newCurrentPeers, peer];
-      }
-      return newCurrentPeers;
-    });
-  };
-
-  const addPeer = (peer: Peer) => {
-    if (peer.headBlockNum > headBlockNum) {
-      setHeadBlockNum(peer.headBlockNum);
-    }
-    setPeers(currentPeers => {
-      return [...currentPeers, peer];
-    });
-  };
+  const [{ config: appConfig }] = useStore()
 
   useEffect(() => {
-    setPeers([]);
-    setConnected(true);
+    setPeers([])
+    setConnected(true)
+
+    const deletePeer = (peer: Peer) => {
+      setPeers((currentPeers) => {
+        const newCurrentPeers = currentPeers.map((peerItem) => {
+          if (peerItem.key === peer.key) {
+            return { ...peerItem, deleted: true, ready: false }
+          }
+          return peerItem
+        })
+        return newCurrentPeers
+      })
+    }
+
+    const updatePeer = (peer: Peer) => {
+      if (peer.headBlockNum > headBlockNum) {
+        setHeadBlockNum(peer.headBlockNum)
+      }
+
+      setPeers((currentPeers) => {
+        let foundPeer = false
+        let newCurrentPeers = currentPeers.map((peerItem) => {
+          if (peerItem.key === peer.key) {
+            foundPeer = true
+            return peer
+          }
+          return peerItem
+        })
+        if (!foundPeer) {
+          newCurrentPeers = [...newCurrentPeers, peer]
+        }
+        return newCurrentPeers
+      })
+    }
+
+    const addPeer = (peer: Peer) => {
+      if (peer.headBlockNum > headBlockNum) {
+        setHeadBlockNum(peer.headBlockNum)
+      }
+
+      setPeers((currentPeers) => {
+        return [...currentPeers, peer]
+      })
+    }
+
     const stream = ApiService.stream({
       route: "search_peers",
       onError: () => {
-        setConnected(false);
+        setConnected(false)
       },
       onComplete: () => {
-        setConnected(false);
+        setConnected(false)
       },
-      onData: resp => {
-        let localPeer;
+      onData: (resp) => {
+        let localPeer
         switch (resp.type) {
           case "Transaction":
-            break;
+            break
           case "BlockRange":
-            break;
+            break
           case "Message":
-            break;
+            break
           case "PeerEvent":
-            localPeer = resp.payload.Peer;
-            localPeer.key = resp.payload.PeerKey;
+            localPeer = resp.payload.Peer
+            localPeer.key = resp.payload.PeerKey
             if (resp.payload.EventName === "sync") {
-              console.log(
-                `[SYNC] for peer ${resp.payload.PeerKey} - ${resp.payload.Peer.host}`
-              );
-              addPeer(localPeer);
+              console.log(`[SYNC] for peer ${resp.payload.PeerKey} - ${resp.payload.Peer.host}`)
+              addPeer(localPeer)
             } else if (resp.payload.EventName === "update") {
-              updatePeer(localPeer);
+              updatePeer(localPeer)
             } else if (resp.payload.EventName === "delete") {
-              console.log(
-                `[DELETED] for peer ${resp.payload.PeerKey} - ${resp.payload.Peer.host}`
-              );
-              deletePeer(localPeer);
+              console.log(`[DELETED] for peer ${resp.payload.PeerKey} - ${resp.payload.Peer.host}`)
+              deletePeer(localPeer)
             }
-            break;
+            break
         }
       }
-    });
+    })
+
     return () => {
       if (stream) {
-        stream.close();
+        stream.close()
       }
-    };
-  }, []);
+    }
+  }, [headBlockNum])
 
   return (
-    <MainLayout config={appConfig} {...props}>
+    <MainLayout>
       <PageHeader
         title="Dmesh Peers"
         tags={
@@ -132,9 +122,9 @@ function BaseDmeshPage(props: RouteComponentProps): React.ReactElement {
         extra={[
           <Button
             key="1"
-            onClick={e => {
-              e.preventDefault();
-              setVisualize(!visualize);
+            onClick={(e) => {
+              e.preventDefault()
+              setVisualize(!visualize)
             }}
             size="small"
             type="ghost"
@@ -145,7 +135,7 @@ function BaseDmeshPage(props: RouteComponentProps): React.ReactElement {
       >
         <Descriptions size="small" column={3}>
           <Descriptions.Item label="Watch Key">
-            {appConfig && (
+            {appConfig && appConfig.dmeshServiceVersion && (
               <Text code>
                 /{appConfig.namespace}/{appConfig.dmeshServiceVersion}/search
               </Text>
@@ -156,16 +146,10 @@ function BaseDmeshPage(props: RouteComponentProps): React.ReactElement {
       <Row>
         <Col>
           <div style={{ marginTop: "10px" }}>
-            <SearchPeerList
-              peers={peers}
-              headBlockNum={headBlockNum}
-              visualize={visualize}
-            />
+            <SearchPeerList peers={peers} headBlockNum={headBlockNum} visualize={visualize} />
           </div>
         </Col>
       </Row>
     </MainLayout>
-  );
+  )
 }
-
-export const DmeshPage = withRouter(BaseDmeshPage);

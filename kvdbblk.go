@@ -10,14 +10,19 @@ import (
 	bt "cloud.google.com/go/bigtable"
 	"github.com/eoscanada/diagnose/utils"
 	"github.com/eoscanada/kvdb"
+	"github.com/eoscanada/kvdb/eosdb"
 	"github.com/eoscanada/kvdb/ethdb"
+	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
 
 func (d *Diagnose) EOSKVDBBlocks(w http.ResponseWriter, req *http.Request) {
-	zlog.Info("diagnose - EOS  - KVDB Block Hole Checker",
-		zap.String("kvdb_connection_info", d.KvdbConnectionInfo))
+	kvdbInfo, db := d.getEOSDatabase(w, req)
+	if kvdbInfo == nil || db == nil {
+		return
+	}
 
+	zlog.Info("diagnose - EOS  - KVDB Block Hole Checker", zap.Reflect("connection_info", kvdbInfo))
 	conn, err := d.upgrader.Upgrade(w, req, nil)
 	if err != nil {
 		return
@@ -35,12 +40,10 @@ func (d *Diagnose) EOSKVDBBlocks(w http.ResponseWriter, req *http.Request) {
 	startTime := time.Now()
 	batchStartTime := time.Now()
 
-	blocksTable := d.EOSdb.Blocks
-
 	go readWebsocket(conn, cancel)
 
 	maybeSendWebsocket(conn, WebsocketTypeProgress, Progress{Elapsed: time.Now().Sub(startTime)})
-	blocksTable.BaseTable.ReadRows(ctx, bt.InfiniteRange(""), func(row bt.Row) bool {
+	db.Blocks.BaseTable.ReadRows(ctx, bt.InfiniteRange(""), func(row bt.Row) bool {
 		count++
 
 		currentBlockNum = int64(math.MaxUint32 - kvdb.BlockNum(row.Key()))
@@ -108,8 +111,12 @@ func (d *Diagnose) EOSKVDBBlocks(w http.ResponseWriter, req *http.Request) {
 }
 
 func (d *Diagnose) EOSKVDBBlocksValidation(w http.ResponseWriter, req *http.Request) {
-	zlog.Info("diagnose - EOS  - KVDB Block Validation",
-		zap.String("kvdb_connection_info", d.KvdbConnectionInfo))
+	kvdbInfo, db := d.getEOSDatabase(w, req)
+	if kvdbInfo == nil || db == nil {
+		return
+	}
+
+	zlog.Info("diagnose - EOS  - KVDB Block Validation", zap.Reflect("connection_info", kvdbInfo))
 
 	conn, err := d.upgrader.Upgrade(w, req, nil)
 	if err != nil {
@@ -128,18 +135,16 @@ func (d *Diagnose) EOSKVDBBlocksValidation(w http.ResponseWriter, req *http.Requ
 	startTime := time.Now()
 	batchStartTime := time.Now()
 
-	blocksTable := d.EOSdb.Blocks
-
 	go readWebsocket(conn, cancel)
 
 	maybeSendWebsocket(conn, WebsocketTypeProgress, Progress{Elapsed: time.Now().Sub(startTime)})
-	blocksTable.BaseTable.ReadRows(ctx, bt.InfiniteRange(""), func(row bt.Row) bool {
+
+	db.Blocks.BaseTable.ReadRows(ctx, bt.InfiniteRange(""), func(row bt.Row) bool {
 		count++
 
 		currentBlockNum = int64(math.MaxUint32 - kvdb.BlockNum(row.Key()))
 
-		isValid := utils.HasAllColumns(row, blocksTable.ColBlock, blocksTable.ColMetaIrreversible, blocksTable.ColMetaWritten, blocksTable.ColTransactionRefs, blocksTable.ColTransactionTraceRefs)
-
+		isValid := utils.HasAllColumns(row, db.Blocks.ColBlock, db.Blocks.ColMetaIrreversible, db.Blocks.ColMetaWritten, db.Blocks.ColTransactionRefs, db.Blocks.ColTransactionTraceRefs)
 		if count%5000 == 0 {
 			maybeSendWebsocket(conn, WebsocketTypeProgress, Progress{Elapsed: time.Now().Sub(startTime)})
 		}
@@ -197,8 +202,12 @@ func (d *Diagnose) EOSKVDBBlocksValidation(w http.ResponseWriter, req *http.Requ
 }
 
 func (d *Diagnose) ETHKVDBBlocks(w http.ResponseWriter, req *http.Request) {
-	zlog.Info("diagnose - ETH  - KVDB Block Hole Checker",
-		zap.String("kvdb_connection_info", d.KvdbConnectionInfo))
+	kvdbInfo, db := d.getETHDatabase(w, req)
+	if kvdbInfo == nil || db == nil {
+		return
+	}
+
+	zlog.Info("diagnose - ETH  - KVDB Block Hole Checker", zap.Reflect("connection_info", kvdbInfo))
 
 	conn, err := d.upgrader.Upgrade(w, req, nil)
 	if err != nil {
@@ -217,12 +226,10 @@ func (d *Diagnose) ETHKVDBBlocks(w http.ResponseWriter, req *http.Request) {
 	startTime := time.Now()
 	batchStartTime := time.Now()
 
-	blocksTable := d.ETHdb.Blocks
-
 	go readWebsocket(conn, cancel)
 	maybeSendWebsocket(conn, WebsocketTypeProgress, Progress{Elapsed: time.Now().Sub(startTime)})
 	// You can test on a lower range with `bt.NewRange("ff76abbf", "ff76abcf")`
-	blocksTable.BaseTable.ReadRows(ctx, bt.InfiniteRange("blkn:"), func(row bt.Row) bool {
+	db.Blocks.BaseTable.ReadRows(ctx, bt.InfiniteRange("blkn:"), func(row bt.Row) bool {
 		count++
 
 		currentBlockNum, _, err = ethdb.Keys.ReadBlockNum(row.Key())
@@ -285,8 +292,12 @@ func (d *Diagnose) ETHKVDBBlocks(w http.ResponseWriter, req *http.Request) {
 }
 
 func (d *Diagnose) ETHKVDBBlockValidation(w http.ResponseWriter, req *http.Request) {
-	zlog.Info("diagnose - ETH  - KVDB Block Validation",
-		zap.String("kvdb_connection_info", d.KvdbConnectionInfo))
+	kvdbInfo, db := d.getETHDatabase(w, req)
+	if kvdbInfo == nil || db == nil {
+		return
+	}
+
+	zlog.Info("diagnose - ETH  - KVDB Block Validation", zap.Reflect("connection_info", kvdbInfo))
 
 	conn, err := d.upgrader.Upgrade(w, req, nil)
 	if err != nil {
@@ -305,12 +316,10 @@ func (d *Diagnose) ETHKVDBBlockValidation(w http.ResponseWriter, req *http.Reque
 	startTime := time.Now()
 	batchStartTime := time.Now()
 
-	blocksTable := d.ETHdb.Blocks
-
 	go readWebsocket(conn, cancel)
 
 	maybeSendWebsocket(conn, WebsocketTypeProgress, Progress{Elapsed: time.Now().Sub(startTime)})
-	blocksTable.BaseTable.ReadRows(ctx, bt.InfiniteRange("blkn:"), func(row bt.Row) bool {
+	db.Blocks.BaseTable.ReadRows(ctx, bt.InfiniteRange("blkn:"), func(row bt.Row) bool {
 		count++
 
 		currentBlockNum, _, err = ethdb.Keys.ReadBlockNum(row.Key())
@@ -318,8 +327,7 @@ func (d *Diagnose) ETHKVDBBlockValidation(w http.ResponseWriter, req *http.Reque
 			return false
 		}
 
-		isValid := utils.HasAllColumns(row, blocksTable.ColHeaderProto, blocksTable.ColMetaIrreversible, blocksTable.ColMetaMapping, blocksTable.ColMetaWritten, blocksTable.ColTrxRefsProto, blocksTable.ColUnclesProto)
-
+		isValid := utils.HasAllColumns(row, db.Blocks.ColHeaderProto, db.Blocks.ColMetaIrreversible, db.Blocks.ColMetaMapping, db.Blocks.ColMetaWritten, db.Blocks.ColTrxRefsProto, db.Blocks.ColUnclesProto)
 		if count%5000 == 0 {
 			maybeSendWebsocket(conn, WebsocketTypeProgress, Progress{Elapsed: time.Now().Sub(startTime)})
 		}
@@ -380,4 +388,51 @@ func (d *Diagnose) ETHKVDBBlockValidation(w http.ResponseWriter, req *http.Reque
 		Status:    BlockRangeStatusValid,
 	})
 	zlog.Info("diagnose - ETH  - KVDB Block Validation - Completed")
+}
+
+func (d *Diagnose) extractConnectionInfo(w http.ResponseWriter, req *http.Request) *kvdb.ConnectionInfo {
+	params := mux.Vars(req)
+
+	connectionInfo := params["connection_info"]
+	if connectionInfo == "" {
+		connectionInfo = d.KvdbConnectionInfo
+	}
+
+	kvdbInfo, err := kvdb.NewConnectionInfo(connectionInfo)
+	if err != nil {
+		fmt.Fprintf(w, "invalid connection info: %s", err)
+		return nil
+	}
+
+	return kvdbInfo
+}
+
+func (d *Diagnose) getEOSDatabase(w http.ResponseWriter, req *http.Request) (*kvdb.ConnectionInfo, *eosdb.EOSDatabase) {
+	kvdbInfo := d.extractConnectionInfo(w, req)
+	if kvdbInfo == nil {
+		return nil, nil
+	}
+
+	db, err := eosdb.New(kvdbInfo.TablePrefix, kvdbInfo.Project, kvdbInfo.Instance, false)
+	if err != nil {
+		fmt.Fprintf(w, "unable to create EOS database: %s", err)
+		return nil, nil
+	}
+
+	return kvdbInfo, db
+}
+
+func (d *Diagnose) getETHDatabase(w http.ResponseWriter, req *http.Request) (*kvdb.ConnectionInfo, *ethdb.ETHDatabase) {
+	kvdbInfo := d.extractConnectionInfo(w, req)
+	if kvdbInfo == nil {
+		return nil, nil
+	}
+
+	db, err := ethdb.New(kvdbInfo.TablePrefix, kvdbInfo.Project, kvdbInfo.Instance, false)
+	if err != nil {
+		fmt.Fprintf(w, "unable to create ETH database: %s", err)
+		return nil, nil
+	}
+
+	return kvdbInfo, db
 }

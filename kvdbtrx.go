@@ -15,28 +15,31 @@ import (
 )
 
 func (d *Diagnose) EOSKVDBTrxsValidation(w http.ResponseWriter, req *http.Request) {
-	zlog.Info("diagnose - EOS  - KVDB Trx Validation",
-		zap.String("kvdb_connection_info", d.KvdbConnectionInfo))
+	kvdbInfo, db := d.getEOSDatabase(w, req)
+	if kvdbInfo == nil || db == nil {
+		return
+	}
 
-	reqCtx, cancel := context.WithCancel(req.Context())
+	zlog.Info("diagnose - EOS  - KVDB Trx Validation", zap.Reflect("connection_info", kvdbInfo))
 
 	conn, err := d.upgrader.Upgrade(w, req, nil)
 	if err != nil {
 		return
 	}
+
 	defer conn.Close()
 
+	reqCtx, cancel := context.WithCancel(req.Context())
 	go readWebsocket(conn, cancel)
 
 	startTime := time.Now()
-	trxsTable := d.EOSdb.Transactions
 
 	processRowRange := func(ctx context.Context, ranges []interface{}) ([]interface{}, error) {
 		zlog.Info("processing ranges", zap.Int("range_count", len(ranges)), zap.Reflect("ranges", ranges))
 		var results []interface{}
 		for _, r := range ranges {
 			rowRange, _ := r.(bt.RowRange)
-			trxsTable.BaseTable.ReadRows(ctx, rowRange, func(row bt.Row) bool {
+			db.Transactions.BaseTable.ReadRows(ctx, rowRange, func(row bt.Row) bool {
 				key := row.Key()
 				trxID := key[0:64]
 

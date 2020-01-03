@@ -1,56 +1,60 @@
-import React, { useState, useEffect } from "react";
-import { withRouter, RouteComponentProps } from "react-router";
-import { Row, Col, Descriptions, PageHeader } from "antd";
-import { BlockRange } from "../types";
-import { ApiService } from "../utils/api";
-import { useAppConfig } from "../hooks/dignose";
-import { BlockHolesList } from "../components/block-holes-list";
-import { MainLayout } from "../components/main-layout";
-import { Btn } from "../atoms/buttons";
+import React, { useState, useEffect } from "react"
+import { Row, Col, Descriptions, PageHeader, Icon } from "antd"
+import { BlockRange } from "../types"
+import { ApiService } from "../utils/api"
+import { BlockHolesList } from "../components/block-holes-list"
+import { MainLayout } from "../components/main-layout"
+import { Btn } from "../atoms/buttons"
+import { CreateInputModalForm } from "../components/input-modal"
+import queryString from "query-string"
+import { useStore } from "../store"
 
-function BaseBlockHolesPage(props: RouteComponentProps): React.ReactElement {
-  const [process, setProcess] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
-  const [ranges, setRanges] = useState<BlockRange[]>([]);
+const EditBlocksUrlModal = CreateInputModalForm({ name: "blocks_url_edit " })
 
-  const appConfig = useAppConfig();
+export const BlockHolesPage: React.FC = () => {
+  const [process, setProcess] = useState(false)
+  const [elapsed, setElapsed] = useState(0)
+  const [ranges, setRanges] = useState<BlockRange[]>([])
+  const [editUrlModalVisible, setEditUrlModalVisible] = useState(false)
+
+  const [{ config: appConfig }, { setConfig }] = useStore()
 
   useEffect(() => {
-    let stream: WebSocket;
+    let stream: WebSocket
     if (process) {
-      setRanges([]);
-      setElapsed(0);
+      setRanges([])
+      setElapsed(0)
       stream = ApiService.stream({
-        route: "block_holes",
+        route: "block_holes?" + queryString.stringify({ blocks_url: appConfig.blockStoreUrl }),
         onComplete: () => {
-          setProcess(false);
+          setProcess(false)
         },
-        onData: resp => {
+        onData: (resp) => {
           switch (resp.type) {
             case "Transaction":
-              break;
+              break
             case "BlockRange":
-              setRanges(currentRanges => [...currentRanges, resp.payload]);
-              break;
+              setRanges((currentRanges) => [...currentRanges, resp.payload])
+              break
             case "Message":
-              break;
+              break
             case "Progress":
-              setElapsed(resp.payload.elapsed);
-              break;
+              setElapsed(resp.payload.elapsed)
+              break
           }
         }
-      });
+      })
     }
 
     return () => {
       if (stream) {
-        stream.close();
+        stream.close()
       }
-    };
-  }, [process]);
+    }
+  }, [process, appConfig.blockStoreUrl])
 
   return (
-    <MainLayout config={appConfig} {...props}>
+    <MainLayout>
       <PageHeader
         title="Block Logs"
         subTitle="hole checker"
@@ -60,28 +64,43 @@ function BaseBlockHolesPage(props: RouteComponentProps): React.ReactElement {
             stopText="Stop Hole Checker"
             startText="Check Block Holes"
             loading={process}
-            onStart={e => {
-              e.preventDefault();
-              setProcess(true);
+            onStart={(e) => {
+              e.preventDefault()
+              setProcess(true)
             }}
-            onStop={e => {
-              e.preventDefault();
-              setProcess(false);
+            onStop={(e) => {
+              e.preventDefault()
+              setProcess(false)
             }}
           />
         ]}
       >
         <Descriptions size="small" column={3}>
           <Descriptions.Item label="Block Store URL">
-            {appConfig && (
-              <a
-                target="_blank"
-                rel="noopener noreferrer"
-                href={appConfig.blockStoreUrl}
-              >
+            {appConfig.blockStoreUrl && (
+              <a target="_blank" rel="noopener noreferrer" href={appConfig.blockStoreUrl}>
                 {appConfig.blockStoreUrl}
               </a>
             )}
+            &nbsp;
+            <Icon
+              type="edit"
+              theme="outlined"
+              onClick={() => {
+                setEditUrlModalVisible(true)
+              }}
+            />
+            <EditBlocksUrlModal
+              initialInput={appConfig.blockStoreUrl}
+              visible={editUrlModalVisible}
+              onInput={(input) => {
+                setConfig({ blockStoreUrl: input })
+                setEditUrlModalVisible(false)
+              }}
+              onCancel={() => {
+                setEditUrlModalVisible(false)
+              }}
+            />
           </Descriptions.Item>
         </Descriptions>
       </PageHeader>
@@ -91,7 +110,5 @@ function BaseBlockHolesPage(props: RouteComponentProps): React.ReactElement {
         </Col>
       </Row>
     </MainLayout>
-  );
+  )
 }
-
-export const BlockHolesPage = withRouter(BaseBlockHolesPage);

@@ -20,6 +20,21 @@ export const DmeshPage: React.FC = () => {
     setPeers([])
     setConnected(true)
 
+    // Due to React Hooks inner working, we cannot rely on the value of the `headBlockNum`
+    // variable coming from the `useState` above unless we have a dependency on it (which
+    // re-triggers the effect).
+    //
+    // However, we do not want to refresh the effect each time the head block num change.
+    // As such, we have a local copy that we use internally and update as well as setting
+    // the `useState` setter so the actual page is re-rendered, but without impacting the
+    // effect (since it has a dependencies list of `[]` which force it to run only on first
+    // render).
+    let localHeadBlockNum = 0
+    const localSetHeadBlockNum = (blockNum: number) => {
+      localHeadBlockNum = blockNum
+      setHeadBlockNum(localHeadBlockNum)
+    }
+
     const deletePeer = (peer: Peer) => {
       setPeers((currentPeers) => {
         const newCurrentPeers = currentPeers.map((peerItem) => {
@@ -33,8 +48,8 @@ export const DmeshPage: React.FC = () => {
     }
 
     const updatePeer = (peer: Peer) => {
-      if (peer.headBlockNum > headBlockNum) {
-        setHeadBlockNum(peer.headBlockNum)
+      if (peer.headBlockNum > localHeadBlockNum) {
+        localSetHeadBlockNum(peer.headBlockNum)
       }
 
       setPeers((currentPeers) => {
@@ -54,8 +69,8 @@ export const DmeshPage: React.FC = () => {
     }
 
     const addPeer = (peer: Peer) => {
-      if (peer.headBlockNum > headBlockNum) {
-        setHeadBlockNum(peer.headBlockNum)
+      if (peer.headBlockNum > localHeadBlockNum) {
+        localSetHeadBlockNum(peer.headBlockNum)
       }
 
       setPeers((currentPeers) => {
@@ -102,7 +117,7 @@ export const DmeshPage: React.FC = () => {
         stream.close()
       }
     }
-  }, [headBlockNum])
+  }, [])
 
   return (
     <MainLayout>

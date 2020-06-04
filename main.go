@@ -56,7 +56,7 @@ func main() {
 		BlocksStoreURL:        *flagBlocksStoreURL,
 		SearchIndexesStoreURL: *flagSearchIndexesStoreURL,
 		SearchShardSize:       uint32(*flagSearchShardSize),
-		SearchShardSizes:      []uint32{50, 500, 5000},
+		SearchShardSizes:      []uint32{50, 200, 500, 1000, 5000, 10000, 50000},
 		KvdbConnectionInfo:    *flagBigTable,
 		DmeshServiceVersion:   *flagMeshServiceVersion,
 		cluster:               cluster,

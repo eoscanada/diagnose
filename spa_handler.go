@@ -48,10 +48,8 @@ func NewSPAHandler(htmlRoot string, devMode bool) *SPAHandler {
 
 func (p *SPAHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if p.devMode {
-		zlog.Info("server HTTP in dev mode")
 		p.ServeHTTPForDevelopment(w, r)
 	} else {
-		zlog.Info("server HTTP in prod mode")
 		p.HandleHTTPSRedirect(w, r)
 		p.ServeHTTPForProduction(w, r)
 	}
